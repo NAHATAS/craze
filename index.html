@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Craze Hosiery Pvt. Ltd.</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A5C3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Craze Hosiery">
+<meta name="mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIREBASE CONFIG — replace these 6 values after you create
+     your Firebase project at https://firebase.google.com
+     Settings → Project settings → Your apps → Web → Config
+     ═══════════════════════════════════════════════════════════ -->
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getDatabase,ref,set,get,onValue,push,update,remove,off}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const FIREBASE_CONFIG={
+  apiKey:            "REPLACE_WITH_YOUR_API_KEY",
+  authDomain:        "REPLACE_WITH_YOUR_AUTH_DOMAIN",
+  databaseURL:       "REPLACE_WITH_YOUR_DATABASE_URL",
+  projectId:         "REPLACE_WITH_YOUR_PROJECT_ID",
+  storageBucket:     "REPLACE_WITH_YOUR_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
+  appId:             "REPLACE_WITH_YOUR_APP_ID"
+};
+
+/* ── ADMIN PASSWORD ─────────────────────────────────────── */
+const ADMIN_PASSWORD = "craze2024";   // ← change this
+
+/* ══════════════════════════════════════════════════════════
+   APP BOOT
+   ══════════════════════════════════════════════════════════ */
+const app  = initializeApp(FIREBASE_CONFIG);
+const db   = getDatabase(app);
+const r    = (path) => ref(db, path);
+window._db = db; window._ref = r;
+window._set = set; window._get = get; window._onValue = onValue;
+window._push = push; window._update = update; window._remove = remove;
+window._off = off;
+window._ADMIN_PASSWORD = ADMIN_PASSWORD;
+window._FB_READY = true;
+document.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<style>
+:root{
+  --bg:#F5F4F0;--surface:#FFF;--surface2:#F0EEE9;--border:#E2DFD8;
+  --text:#1A1814;--text2:#6B6760;--text3:#9C9990;
+  --accent:#1A5C3A;--accent-light:#E8F5EE;
+  --amber:#B87333;--amber-light:#FDF3E7;
+  --red:#C0392B;--red-light:#FDECEB;
+  --blue:#1A3A5C;--blue-light:#EBF0F7;
+  --purple:#4A3580;--purple-light:#F0EEFB;
+  --teal:#0F6E56;--teal-light:#E1F5EE;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --r:10px;--r-lg:16px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button{font-family:var(--font);cursor:pointer}
+input,textarea,select{font-family:var(--font)}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);padding:20px}
+.login-card{background:var(--surface);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;box-shadow:var(--shadow-md);border:1px solid var(--border)}
+.login-logo{font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px}.login-logo span{color:var(--accent)}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+.login-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:20px}
+.login-tab{flex:1;padding:8px;border:none;background:transparent;border-radius:6px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.login-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.form-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--text);margin-bottom:14px;outline:none;transition:border .15s}
+.form-input:focus{border-color:var(--accent)}
+.pin-row{display:flex;gap:10px;margin-bottom:14px}
+.pin-digit{flex:1;height:52px;border:1px solid var(--border);border-radius:8px;font-size:22px;font-weight:600;text-align:center;background:var(--surface);color:var(--text);outline:none}
+.pin-digit:focus{border-color:var(--accent)}
+.btn-login{width:100%;padding:12px;background:var(--accent);color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-login:hover{background:#14472D}
+.login-error{color:var(--red);font-size:12px;text-align:center;margin-top:8px;min-height:18px}
+.sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.sync-dot.ok{background:#1D9E75}
+.sync-dot.err{background:var(--red)}
+.sync-dot.wait{background:var(--amber);animation:pulse 1.5s infinite}
+
+/* ── NAV ── */
+.top-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;gap:8px}
+.nav-brand{font-size:14px;font-weight:600;letter-spacing:-.02em;white-space:nowrap;flex-shrink:0}
+.nav-brand span{color:var(--accent)}
+.nav-tabs{display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:5px 11px;border-radius:6px;font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;flex-shrink:0}
+.nav-tab.active{background:var(--accent);color:white}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.nav-avatar{width:28px;height:28px;border-radius:50%;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.logout-btn{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 6px}
+
+/* ── VIEWS ── */
+.view{display:none}.view.active{display:block}
+
+/* ── SHELL WRAPPERS ── */
+.admin-shell{padding:20px;max-width:1280px;margin:0 auto}
+.mobile-shell{max-width:440px;margin:16px auto;padding:0 14px 40px}
+.section-shell{padding:20px;max-width:1100px;margin:0 auto}
+
+/* ── COMMON CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-header-sub{font-size:11px;font-weight:400;color:var(--text2)}
+
+/* ── METRICS ── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow)}
+.metric-num{font-size:26px;font-weight:600;margin-bottom:2px}
+.metric-lbl{font-size:12px;color:var(--text2)}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ── MOBILE VISIT CARD ── */
+.visit-card{background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.visit-card.active-visit{border-left:3px solid var(--accent);border-radius:0 var(--r-lg) var(--r-lg) 0}
+.visit-card-top{padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.visit-name{font-size:14px;font-weight:600}
+.visit-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.visit-actions{padding:8px 14px 12px;display:flex;gap:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.visit-done{padding:10px 14px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);background:var(--surface2)}
+.party-strip{padding:7px 14px;background:var(--blue-light);border-top:1px solid var(--border);font-size:11px;color:var(--blue);display:flex;gap:12px;flex-wrap:wrap}
+.day-header{background:var(--surface);border-radius:var(--r-lg);padding:14px;margin-bottom:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.day-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.greeting{font-size:15px;font-weight:600}
+.date-badge{font-size:11px;font-family:var(--mono);background:var(--surface2);padding:3px 8px;border-radius:4px;color:var(--text2)}
+.day-stats{display:flex;gap:8px}
+.day-stat{flex:1;background:var(--surface2);border-radius:8px;padding:8px 10px;text-align:center}
+.day-stat-num{font-size:20px;font-weight:600}
+.day-stat-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.section-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 8px}
+.add-btn{width:100%;padding:12px;border:1.5px dashed var(--border);border-radius:var(--r-lg);background:transparent;color:var(--text2);font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;margin-top:4px}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.add-btn.wa{border-color:#9FE1CB;color:var(--teal);margin-top:8px}
+.add-btn.wa:hover{border-color:var(--teal);background:var(--teal-light)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-planned{background:var(--blue-light);color:var(--blue)}
+.badge-active{background:var(--accent-light);color:var(--accent)}
+.badge-order{background:var(--accent-light);color:var(--accent)}
+.badge-noorder{background:var(--red-light);color:var(--red)}
+.badge-resched{background:var(--amber-light);color:var(--amber)}
+.badge-feedback{background:var(--purple-light);color:var(--purple)}
+.badge-new{background:var(--teal-light);color:var(--teal)}
+.badge-state{background:var(--blue-light);color:var(--blue)}
+.reorder-badge{background:#FDF3E7;color:#B87333;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;border:1px solid #F0C68A;display:inline-flex;align-items:center;gap:3px}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn-green{background:var(--accent);color:white;border-color:var(--accent)}
+.btn-green:hover{background:#14472D}
+.btn-outline{background:transparent;color:var(--text2);border-color:var(--border)}
+.btn-outline:hover{background:var(--surface2)}
+.btn-amber{background:transparent;color:var(--amber);border-color:var(--amber)}
+.btn-red{background:transparent;color:var(--red);border-color:var(--red)}
+.btn-blue{background:transparent;color:var(--blue);border-color:var(--blue)}
+.btn-teal{background:var(--teal);color:white;border-color:var(--teal)}
+.btn-full{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600;justify-content:center}
+
+/* ── TABLES ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--surface2)}
+.tbl-scroll{overflow-x:auto}
+.person-cell{display:flex;align-items:center;gap:8px}
+.av{border-radius:50%;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.time-mono{font-family:var(--mono);font-size:11px;color:var(--text2)}
+.price-tag{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+.dur-badge{font-family:var(--mono);font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--text2)}
+.outstanding-ok{background:var(--accent-light);color:var(--accent);font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px}
+.outstanding-due{background:var(--red-light);color:var(--red);font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px}
+.size-badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:500;background:var(--surface2);color:var(--text2);margin:1px}
+.icon-btn{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.icon-btn:hover{background:var(--surface2)}
+.icon-btn.danger:hover{background:var(--red-light);color:var(--red);border-color:var(--red)}
+
+/* ── SEARCH / FILTER ── */
+.search-bar{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);outline:none;margin-bottom:12px}
+.search-bar:focus{border-color:var(--accent)}
+.filter-select{padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);color:var(--text);outline:none}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.admin-title{font-size:20px;font-weight:600}
+.admin-sub{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 20px 32px;max-height:90vh;overflow-y:auto}
+.modal-wide{max-width:660px}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.status-pill.sel-order{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.status-pill.sel-noorder{background:var(--red-light);border-color:var(--red);color:var(--red)}
+.status-pill.sel-rescheduled{background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.status-pill.sel-feedback{background:var(--purple-light);border-color:var(--purple);color:var(--purple)}
+.gps-indicator{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--accent-light);border-radius:8px;margin-bottom:12px;font-size:12px;color:var(--accent);font-weight:500}
+.pay-section{background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
+.pay-section-title{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px}
+.pay-pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid #5DCAA5;background:transparent;color:var(--teal);cursor:pointer;transition:all .15s}
+.pay-pill.selected{background:var(--teal);color:white;border-color:var(--teal)}
+
+/* ── ORDER PICKER ── */
+.order-picker{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.op-header{background:var(--surface2);padding:7px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:grid;grid-template-columns:1fr 76px 64px 58px;gap:8px}
+.op-cat{padding:5px 12px;background:var(--surface2);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border)}
+.op-row{display:grid;grid-template-columns:1fr 76px 64px 58px;gap:8px;padding:8px 12px;border-top:1px solid var(--border);align-items:center;font-size:12px}
+.op-row:hover{background:var(--surface2)}
+.qty-input{width:52px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;outline:none}
+.qty-input:focus{border-color:var(--accent)}
+.op-total{padding:10px 12px;background:var(--accent-light);border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--accent)}
+
+/* ── ADMIN GRID ── */
+.admin-grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+.right-col{display:flex;flex-direction:column;gap:16px}
+.map-area{height:200px;background:#E8EDE6;position:relative;overflow:hidden}
+.map-grid{position:absolute;inset:0;opacity:.2;background-image:linear-gradient(#888 1px,transparent 1px),linear-gradient(90deg,#888 1px,transparent 1px);background-size:40px 40px}
+.map-road-h{position:absolute;height:3px;background:#C8C0B4}
+.map-road-v{position:absolute;width:3px;background:#C8C0B4}
+.map-pin{position:absolute;width:13px;height:13px;border-radius:50%;border:2.5px solid white;transform:translate(-50%,-50%);box-shadow:0 2px 4px rgba(0,0,0,.2);cursor:pointer;transition:transform .2s}
+.map-pin:hover{transform:translate(-50%,-50%) scale(1.4)}
+.map-legend{position:absolute;bottom:8px;left:8px;background:white;border-radius:6px;padding:5px 10px;font-size:10px;display:flex;gap:8px;box-shadow:var(--shadow)}
+.legend-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+.sp-row{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:10px}
+.sp-row:last-child{border-bottom:none}
+.sp-bar-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:3px}
+.sp-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.feedback-item{padding:11px 16px;border-bottom:1px solid var(--border)}
+.feedback-item:last-child{border-bottom:none}
+.feedback-text{font-size:12px;color:var(--text2);margin-top:4px;background:var(--surface2);padding:6px 10px;border-radius:6px}
+
+/* ── MECA ── */
+.meca-formula-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.meca-eq{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;margin-top:8px}
+.meca-var{padding:4px 12px;border-radius:6px;font-weight:600;font-size:13px}
+.meca-var.me{background:var(--accent-light);color:var(--accent)}
+.meca-var.c{background:var(--blue-light);color:var(--blue)}
+.meca-var.a{background:var(--amber-light);color:var(--amber)}
+.meca-var.rev{background:var(--accent);color:white}
+.meca-op{color:var(--text3);font-size:16px}
+.meca-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.meca-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.meca-metrics{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)}
+.meca-metric{padding:14px;text-align:center;border-right:1px solid var(--border)}
+.meca-metric:last-child{border-right:none}
+.meca-metric-num{font-size:22px;font-weight:600}
+.meca-metric-lbl{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.meca-revenue-row{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.meca-formula-steps{padding:10px 16px;background:var(--surface2);font-size:11px;color:var(--text2);line-height:1.8}
+.meca-formula-steps span{font-weight:600;color:var(--text);font-family:var(--mono)}
+.sp-meca-row{display:grid;grid-template-columns:140px repeat(5,1fr);align-items:center;border-bottom:1px solid var(--border)}
+.sp-meca-row:last-child{border-bottom:none}
+.sp-meca-cell{padding:10px 12px;font-size:12px;text-align:center;border-right:1px solid var(--border)}
+.sp-meca-cell:first-child{text-align:left}
+.sp-meca-cell:last-child{border-right:none}
+.meca-monthly th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);text-align:center}
+.meca-monthly th:first-child{text-align:left}
+.meca-monthly td{padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px;text-align:center}
+.meca-monthly td:first-child{text-align:left;font-weight:500}
+.meca-monthly tr:last-child td{border-bottom:none;font-weight:600;background:var(--surface2)}
+
+/* ── TOURS ── */
+.tour-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
+.tour-card-header{padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tour-stats{display:flex;border-top:1px solid var(--border)}
+.tour-stat{flex:1;padding:10px 12px;text-align:center;border-right:1px solid var(--border);font-size:12px}
+.tour-stat:last-child{border-right:none}
+.tour-stat-num{font-size:16px;font-weight:600}
+.tour-stat-lbl{font-size:10px;color:var(--text2);margin-top:1px}
+.tour-actions{padding:8px 14px 12px;display:flex;gap:8px;border-top:1px solid var(--border);flex-wrap:wrap}
+.advance-bar{margin:0 16px 12px;background:var(--surface2);border-radius:8px;padding:10px 12px}
+.advance-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.advance-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
+.advance-fill.over{background:var(--red)}
+.tour-badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tour-active{background:#E1F5EE;color:#0F6E56}
+.tour-pending{background:var(--amber-light);color:var(--amber)}
+.tour-approved{background:var(--accent-light);color:var(--accent)}
+.tour-rejected{background:var(--red-light);color:var(--red)}
+.tour-draft{background:var(--surface2);color:var(--text2)}
+.roi-badge{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600}
+.roi-good{background:var(--accent-light);color:var(--accent)}
+.roi-ok{background:var(--amber-light);color:var(--amber)}
+.roi-bad{background:var(--red-light);color:var(--red)}
+
+/* ── TARGET BAR ── */
+.target-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.target-name{width:110px;font-size:12px;font-weight:500;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.target-track{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.target-fill{height:100%;border-radius:5px;background:var(--accent);transition:width .5s}
+.target-fill.over{background:var(--teal)}
+.target-pct{font-size:11px;font-family:var(--mono);width:42px;text-align:right;flex-shrink:0}
+.target-val{font-size:10px;color:var(--text3);white-space:nowrap}
+
+/* ── PARTY DRAWER ── */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end;justify-content:center}
+.drawer-overlay.open{display:flex}
+.drawer{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:0 0 32px}
+.drawer-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0}
+.drawer-header{padding:14px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.history-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.history-row:last-child{border-bottom:none}
+.history-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+
+/* ── INACTIVE / BARS ── */
+.inactive-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.inactive-card.critical{border-left:3px solid var(--red);border-radius:0 var(--r-lg) var(--r-lg) 0}
+.inactive-card.warning{border-left:3px solid var(--amber);border-radius:0 var(--r-lg) var(--r-lg) 0}
+.days-badge{font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.days-critical{background:var(--red-light);color:var(--red)}
+.days-warning{background:var(--amber-light);color:var(--amber)}
+.days-ok{background:var(--surface2);color:var(--text2)}
+.prod-bar-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.prod-bar-row:last-child{border-bottom:none}
+.prod-bar-name{width:170px;font-size:12px;font-weight:500;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod-bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.prod-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s}
+.prod-bar-val{width:72px;text-align:right;font-size:11px;font-family:var(--mono);color:var(--text2);flex-shrink:0}
+
+/* ── FY ── */
+.fy-card{background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);margin-bottom:16px}
+
+/* ── WHATSAPP ── */
+.wa-box{background:#E8F5EE;border:1px solid #9FE1CB;border-radius:var(--r-lg);padding:14px 16px;font-size:12px;line-height:1.9;font-family:var(--mono);color:var(--text);white-space:pre-wrap;word-break:break-word;margin-bottom:10px}
+
+/* ── SYNC STATUS ── */
+#sync-status{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px}
+
+/* ── SPINNER ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite;display:inline-block}
+
+@media(max-width:900px){.admin-grid{grid-template-columns:1fr}.metrics-row{grid-template-columns:1fr 1fr}.meca-grid{grid-template-columns:1fr}.sp-meca-row{grid-template-columns:110px repeat(5,1fr)}}
+@media(max-width:540px){.metrics-row{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ── OFFLINE BANNER ── -->
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:1000;background:#B87333;color:white;text-align:center;padding:8px 16px;font-size:13px;font-weight:500">
+  📶 You are offline — showing last synced data. Changes will sync when back online.
+</div>
+
+<!-- ── INSTALL BANNER ── -->
+<div id="install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:#1A5C3A;color:white;padding:12px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 12px rgba(0,0,0,.15)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">C</div>
+    <div>
+      <div style="font-weight:600;font-size:14px">Install Craze Hosiery</div>
+      <div style="font-size:12px;opacity:.85">Add to home screen for quick access</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button onclick="doInstall()" style="background:white;color:#1A5C3A;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Install</button>
+    <button onclick="dismissInstall()" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer">Later</button>
+  </div>
+</div>
+
+<!-- ── UPDATE BANNER ── -->
+<div id="update-banner" style="display:none;position:fixed;top:52px;left:0;right:0;z-index:998;background:#1A3A5C;color:white;text-align:center;padding:10px 16px;font-size:13px">
+  🆕 New version available —
+  <button onclick="doUpdate()" style="background:white;color:#1A3A5C;border:none;border-radius:6px;padding:3px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:8px">Update now</button>
+</div>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Craze <span>Hosiery</span></div>
+    <div class="login-sub">Pvt. Ltd. — Visit Tracker</div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" id="tab-admin" onclick="setLoginTab('admin')">Admin</button>
+      <button class="login-tab" id="tab-sp" onclick="setLoginTab('sp')">Salesperson</button>
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div id="login-admin">
+      <label class="form-label">Admin password</label>
+      <input type="password" class="form-input" id="admin-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+      <button class="btn-login" onclick="doAdminLogin()">Login as Admin</button>
+    </div>
+
+    <!-- SP LOGIN -->
+    <div id="login-sp" style="display:none">
+      <label class="form-label">Your name</label>
+      <select class="form-input" id="sp-select"><option value="">Loading...</option></select>
+      <label class="form-label">4-digit PIN</label>
+      <div class="pin-row">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p1" oninput="pinNext(this,'p2')">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p2" oninput="pinNext(this,'p3')" onkeydown="pinBack(event,'p1')">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p3" oninput="pinNext(this,'p4')" onkeydown="pinBack(event,'p2')">
+        <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="p4" oninput="pinNext(this,null)" onkeydown="pinBack(event,'p3')">
+      </div>
+      <button class="btn-login" onclick="doSPLogin()">Login</button>
+    </div>
+
+    <div class="login-error" id="login-error"></div>
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text3)">
+      <span class="sync-dot wait" id="fb-dot"></span>
+      <span id="fb-status">Connecting to database...</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="app" style="display:none">
+
+<!-- NAV -->
+<nav class="top-nav" id="main-nav">
+  <div class="nav-brand">Craze <span>Hosiery</span></div>
+  <div class="nav-tabs" id="nav-tabs-wrap"></div>
+  <div class="nav-right">
+    <div id="sync-status"><span class="sync-dot wait" id="sync-dot"></span><span id="sync-lbl">Syncing</span></div>
+    <div class="nav-avatar" id="nav-avatar" style="background:#E8F5EE;color:#1A5C3A;font-size:11px;font-weight:600">?</div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<!-- VIEWS CONTAINER -->
+<div id="views-container"></div>
+
+</div><!-- /#app -->
+
+<!-- ═══════════ MODALS (shared) ═══════════ -->
+
+<!-- CHECKOUT -->
+<div class="modal-overlay" id="checkout-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="co-title">Check out</div>
+  <div class="modal-sub" id="co-sub"></div>
+  <div class="gps-indicator"><div class="pulse-dot"></div> GPS location captured automatically</div>
+  <label class="form-label">Visit outcome</label>
+  <div class="status-pills">
+    <button class="status-pill" onclick="selStatus('order',this)">Order received</button>
+    <button class="status-pill" onclick="selStatus('noorder',this)">No order</button>
+    <button class="status-pill" onclick="selStatus('rescheduled',this)">Reschedule</button>
+    <button class="status-pill" onclick="selStatus('feedback',this)">Follow-up needed</button>
+  </div>
+  <div id="order-picker-section" style="display:none">
+    <label class="form-label">Order items</label>
+    <div id="order-picker-wrap"></div>
+  </div>
+  <div class="pay-section">
+    <div class="pay-section-title">Payment collected? (optional)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      <button class="pay-pill" onclick="togglePay(this,'Cheque')">Cheque</button>
+      <button class="pay-pill" onclick="togglePay(this,'NEFT / Bank Transfer')">NEFT / Transfer</button>
+      <button class="pay-pill" onclick="togglePay(this,'UPI')">UPI</button>
+      <button class="pay-pill" onclick="togglePay(this,'Adjustment')">Adjustment</button>
+    </div>
+    <div id="pay-fields" style="display:none">
+      <div class="form-row">
+        <div><label class="form-label">Amount (₹)</label><input type="number" class="form-input" id="co-pay-amount" min="1" placeholder="0" oninput="updPayBalance()"></div>
+        <div><label class="form-label">Ref / Cheque no.</label><input type="text" class="form-input" id="co-pay-ref" placeholder="Reference"></div>
+      </div>
+      <label class="form-label">Notes</label>
+      <input type="text" class="form-input" id="co-pay-notes" placeholder="e.g. Cheque dated...">
+    </div>
+  </div>
+  <label class="form-label">Feedback / notes</label>
+  <textarea class="form-input" style="resize:vertical;min-height:60px" id="co-feedback" placeholder="What happened..."></textarea>
+  <div id="co-next-date-row"><label class="form-label">Next visit date</label><input type="date" class="form-input" id="co-nextdate"></div>
+  <div id="co-resched-date-row" style="display:none"><label class="form-label">Reschedule to</label><input type="date" class="form-input" id="co-rescheddate"></div>
+  <button class="btn btn-green btn-full" onclick="submitCheckout()">Submit & Check Out</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('checkout-modal')">Cancel</button>
+  <input type="hidden" id="co-visit-id">
+</div>
+</div>
+
+<!-- ADD VISIT -->
+<div class="modal-overlay" id="add-visit-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Add visit to plan</div>
+  <div class="modal-sub">Schedule a customer visit</div>
+  <label class="form-label">Party</label>
+  <select class="form-input" id="av-party" onchange="showPartyInfo(this.value)"></select>
+  <div id="av-party-info" style="display:none;margin:-8px 0 12px;padding:8px 12px;background:var(--blue-light);border-radius:8px;font-size:12px;color:var(--blue)"></div>
+  <div class="form-row">
+    <div><label class="form-label">Time</label><input type="time" class="form-input" id="av-time"></div>
+    <div><label class="form-label">Date</label><input type="date" class="form-input" id="av-date"></div>
+  </div>
+  <label class="form-label">Notes (optional)</label>
+  <input type="text" class="form-input" id="av-notes" placeholder="Purpose of visit...">
+  <button class="btn btn-green btn-full" onclick="submitAddVisit()">Add to plan</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('add-visit-modal')">Cancel</button>
+</div>
+</div>
+
+<!-- RESCHEDULE -->
+<div class="modal-overlay" id="resched-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="rs-title">Reschedule visit</div>
+  <div class="modal-sub" id="rs-sub"></div>
+  <div class="form-row">
+    <div><label class="form-label">New date</label><input type="date" class="form-input" id="rs-date"></div>
+    <div><label class="form-label">New time</label><input type="time" class="form-input" id="rs-time"></div>
+  </div>
+  <label class="form-label">Reason</label>
+  <input type="text" class="form-input" id="rs-reason" placeholder="Why rescheduling?">
+  <button class="btn btn-amber btn-full" onclick="submitResched()">Confirm reschedule</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('resched-modal')">Cancel</button>
+  <input type="hidden" id="rs-visit-id">
+</div>
+</div>
+
+<!-- PARTY MODAL (admin) -->
+<div class="modal-overlay" id="party-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="pm-title">Add party</div>
+  <label class="form-label">Party name *</label><input type="text" class="form-input" id="pm-name" placeholder="Full firm name">
+  <div class="form-row">
+    <div><label class="form-label">Contact person</label><input type="text" class="form-input" id="pm-contact"></div>
+    <div><label class="form-label">Phone</label><input type="text" class="form-input" id="pm-phone"></div>
+  </div>
+  <div class="form-row">
+    <div><label class="form-label">City / Area</label><input type="text" class="form-input" id="pm-city"></div>
+    <div><label class="form-label">State *</label>
+      <select class="form-input" id="pm-state">
+        <option value="">Select</option>
+        <option>Gujarat</option><option>Maharashtra</option><option>Rajasthan</option>
+        <option>Delhi</option><option>Uttar Pradesh</option><option>West Bengal</option>
+        <option>Karnataka</option><option>Tamil Nadu</option><option>Madhya Pradesh</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div><label class="form-label">Assigned SP *</label><select class="form-input" id="pm-sp"></select></div>
+    <div><label class="form-label">Outstanding (₹)</label><input type="number" class="form-input" id="pm-outstanding" min="0" placeholder="0"></div>
+  </div>
+  <label class="form-label">Last order date</label><input type="date" class="form-input" id="pm-lastorder">
+  <button class="btn btn-green btn-full" onclick="submitParty()">Save party</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('party-modal')">Cancel</button>
+  <input type="hidden" id="pm-edit-id">
+</div>
+</div>
+
+<!-- PRODUCT MODAL (admin) -->
+<div class="modal-overlay" id="product-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="prod-modal-title">Add product</div>
+  <div class="form-row">
+    <div><label class="form-label">Code *</label><input type="text" class="form-input" id="prod-code"></div>
+    <div><label class="form-label">Category *</label>
+      <select class="form-input" id="prod-cat">
+        <option value="">Select</option>
+        <option>Vest</option><option>Brief</option><option>Trunk</option><option>Boxer</option>
+        <option>Thermal</option><option>Socks</option><option>Bra</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+  <label class="form-label">Product name *</label><input type="text" class="form-input" id="prod-name">
+  <div class="form-row">
+    <div><label class="form-label">Unit</label>
+      <select class="form-input" id="prod-unit"><option>Piece</option><option>Dozen</option><option>Set</option><option>Kg</option><option>Metre</option></select>
+    </div>
+    <div><label class="form-label">MRP (₹) *</label><input type="number" class="form-input" id="prod-mrp" min="0" step="0.01"></div>
+  </div>
+  <label class="form-label">Sizes (comma separated)</label>
+  <input type="text" class="form-input" id="prod-sizes" placeholder="S,M,L,XL,XXL or leave blank">
+  <button class="btn btn-green btn-full" onclick="submitProduct()">Save product</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('product-modal')">Cancel</button>
+  <input type="hidden" id="prod-edit-id">
+</div>
+</div>
+
+<!-- SP MODAL (admin — add/edit salesperson) -->
+<div class="modal-overlay" id="sp-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="sp-modal-title">Add salesperson</div>
+  <label class="form-label">Full name *</label><input type="text" class="form-input" id="sp-name" placeholder="e.g. Raunak Shah">
+  <label class="form-label">4-digit PIN *</label>
+  <div class="pin-row" style="margin-bottom:14px">
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="sp-p1" oninput="pinNext(this,'sp-p2')">
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="sp-p2" oninput="pinNext(this,'sp-p3')" onkeydown="pinBack(event,'sp-p1')">
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="sp-p3" oninput="pinNext(this,'sp-p4')" onkeydown="pinBack(event,'sp-p2')">
+    <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="sp-p4" oninput="pinNext(this,null)" onkeydown="pinBack(event,'sp-p3')">
+  </div>
+  <button class="btn btn-green btn-full" onclick="submitSP()">Save salesperson</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('sp-modal')">Cancel</button>
+  <input type="hidden" id="sp-edit-id">
+</div>
+</div>
+
+<!-- TOUR MODAL -->
+<div class="modal-overlay" id="tour-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="tour-modal-title">New tour</div>
+  <div class="modal-sub">Group visits and track expenses by tour</div>
+  <div class="form-row">
+    <div><label class="form-label">Salesperson *</label><select class="form-input" id="tm-sp"></select></div>
+    <div><label class="form-label">City / Area *</label><input type="text" class="form-input" id="tm-area" placeholder="e.g. Surat, Rajkot"></div>
+  </div>
+  <div class="form-row">
+    <div><label class="form-label">From date *</label><input type="date" class="form-input" id="tm-from"></div>
+    <div><label class="form-label">To date *</label><input type="date" class="form-input" id="tm-to"></div>
+  </div>
+  <label class="form-label">Advance given (₹)</label>
+  <input type="number" class="form-input" id="tm-advance" placeholder="0" min="0">
+  <label class="form-label">Notes (optional)</label>
+  <input type="text" class="form-input" id="tm-notes" placeholder="Purpose, plan...">
+  <button class="btn btn-green btn-full" onclick="submitTour()">Save tour</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('tour-modal')">Cancel</button>
+  <input type="hidden" id="tm-edit-id">
+</div>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="modal-overlay" id="expense-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="exp-title">Submit expenses</div>
+  <div class="modal-sub" id="exp-sub"></div>
+  <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px" id="exp-summary"></div>
+  <label class="form-label">Total expenses (₹) *</label>
+  <input type="number" class="form-input" id="exp-amount" min="0" placeholder="0" oninput="updExpBalance()">
+  <div id="exp-balance-row" style="display:none;background:var(--accent-light);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--text2)">Advance given</span><span id="exp-adv-lbl" style="font-weight:500"></span></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--text2)">Total spent</span><span id="exp-spent-lbl" style="font-weight:500"></span></div>
+    <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px"><span id="exp-bal-label" style="font-weight:600"></span><span id="exp-bal-val" style="font-weight:600"></span></div>
+  </div>
+  <label class="form-label">Notes</label>
+  <input type="text" class="form-input" id="exp-notes" placeholder="Any notes...">
+  <button class="btn btn-green btn-full" onclick="submitExpense()">Submit for approval</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('expense-modal')">Cancel</button>
+  <input type="hidden" id="exp-tour-id">
+</div>
+</div>
+
+<!-- APPROVE EXPENSE MODAL (admin) -->
+<div class="modal-overlay" id="approve-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title" id="appr-title">Review expense</div>
+  <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:12px" id="appr-details"></div>
+  <label class="form-label">Admin note (optional)</label>
+  <input type="text" class="form-input" id="appr-note" placeholder="Reason for approval or rejection...">
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-green" style="flex:1;padding:10px;justify-content:center" onclick="approveExpense(true)">Approve</button>
+    <button class="btn btn-red" style="flex:1;padding:10px;justify-content:center" onclick="approveExpense(false)">Reject</button>
+  </div>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('approve-modal')">Cancel</button>
+  <input type="hidden" id="appr-tour-id">
+</div>
+</div>
+
+<!-- TARGET MODAL (admin) -->
+<div class="modal-overlay" id="target-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Set monthly targets</div>
+  <div class="modal-sub" id="target-modal-sub">Order value targets for this month</div>
+  <div id="target-sp-inputs"></div>
+  <button class="btn btn-green btn-full" onclick="submitTargets()">Save targets</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('target-modal')">Cancel</button>
+  <input type="hidden" id="target-month-key">
+</div>
+</div>
+
+<!-- PARTY HISTORY DRAWER -->
+<div class="drawer-overlay" id="party-drawer" onclick="if(event.target===this)closeDrawer()">
+<div class="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <div style="font-size:16px;font-weight:600" id="drawer-name"></div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px" id="drawer-sub"></div>
+      </div>
+      <button class="btn btn-outline" style="font-size:12px" onclick="closeDrawer()">Close</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="drawer-stats"></div>
+  </div>
+  <div style="padding:12px 18px;border-bottom:1px solid var(--border)" id="drawer-outstanding"></div>
+  <div style="padding:12px 18px">
+    <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Visit & order history</div>
+    <div id="drawer-history"></div>
+  </div>
+</div>
+</div>
+
+<!-- WHATSAPP MODAL -->
+<div class="modal-overlay" id="wa-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Daily summary</div>
+  <div class="modal-sub" id="wa-sub">Ready to copy and share</div>
+  <div class="wa-box" id="wa-text"></div>
+  <button class="btn btn-green btn-full" onclick="copyWA()">Copy to clipboard</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('wa-modal')">Close</button>
+</div>
+</div>
+
+<!-- CHANGE ADMIN PASSWORD MODAL -->
+<div class="modal-overlay" id="pwd-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title">Change admin password</div>
+  <div class="modal-sub">Note: password is stored in the HTML file. To make it permanent, update ADMIN_PASSWORD in the file.</div>
+  <label class="form-label">Current password</label><input type="password" class="form-input" id="pwd-current">
+  <label class="form-label">New password</label><input type="password" class="form-input" id="pwd-new">
+  <label class="form-label">Confirm new password</label><input type="password" class="form-input" id="pwd-confirm">
+  <button class="btn btn-green btn-full" onclick="changePassword()">Update password</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('pwd-modal')">Cancel</button>
+</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CRAZE HOSIERY — MAIN APP SCRIPT
+   Firebase Realtime Database + Role-based login
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── STATE ── */
+let DB=null, REF=null, SET=null, GET=null, ON=null, PUSH=null, UPDATE=null, REMOVE=null, OFF=null;
+let ADMIN_PWD='craze2024';
+let currentRole=null; // 'admin' | 'sp'
+let currentSP=null;   // {id, name, initials, color, bg}
+let _listeners=[];
+
+/* ── IN-MEMORY CACHE (synced from Firebase) ── */
+let SALESPERSONS=[], PARTIES=[], PRODUCTS=[], VISITS={}, TOURS={}, TARGETS={};
+
+const SP_COLORS=[
+  {color:'#1A5C3A',bg:'#E8F5EE'},{color:'#4A3580',bg:'#F0EEFB'},
+  {color:'#B87333',bg:'#FDF3E7'},{color:'#1A3A5C',bg:'#EBF0F7'},
+  {color:'#0F6E56',bg:'#E1F5EE'},{color:'#C0392B',bg:'#FDECEB'},
+];
+const FALLBACK_SP={name:'Unknown',initials:'?',bg:'#eee',color:'#999'};
+
+/* ── UTILS ── */
+const today=()=>new Date().toISOString().slice(0,10);
+const nowTime=()=>new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+const fmtTime=t=>{if(!t)return'—';const[h,m]=t.split(':');const hh=parseInt(h);return`${hh%12||12}:${m} ${hh>=12?'PM':'AM'}`};
+const fmtDate=d=>{if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'})};
+const fmtMoney=n=>'₹'+Number(n||0).toLocaleString('en-IN');
+const dur=(i,o)=>{if(!i||!o)return null;const[ih,im]=i.split(':').map(Number);const[oh,om]=o.split(':').map(Number);const d=(oh*60+om)-(ih*60+im);if(d<=0)return null;return d<60?`${d}m`:`${Math.floor(d/60)}h ${d%60}m`};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const daysBetween=(d1,d2)=>Math.floor((new Date(d2)-new Date(d1))/86400000);
+const esc=s=>{const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML};
+const closeModal=id=>document.getElementById(id).classList.remove('open');
+const openModal=id=>document.getElementById(id).classList.add('open');
+const showToast=msg=>{const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1814;color:white;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;white-space:nowrap;max-width:90vw;text-align:center';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2500)};
+
+function orderValue(v){
+  return(v.orderItems||[]).reduce((s,i)=>{const p=PRODUCTS.find(x=>x.id===i.prodId);return s+(p?p.mrp*i.qty:0)},0);
+}
+function visitsArr(){return Object.values(VISITS);}
+function toursArr(){return Object.values(TOURS);}
+function isNewClient(partyId,visitDate){
+  return!visitsArr().some(v=>v.partyId===partyId&&v.date<visitDate&&['order','noorder'].includes(v.status));
+}
+function buildLastVisitMap(){
+  const map={};
+  visitsArr().forEach(v=>{if(['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut){if(!map[v.partyId]||v.date>map[v.partyId])map[v.partyId]=v.date;}});
+  return map;
+}
+function tourVisits(t){return visitsArr().filter(v=>v.spId===t.spId&&v.date>=t.fromDate&&v.date<=t.toDate);}
+function tourOrderValue(t){return tourVisits(t).filter(v=>v.status==='order').reduce((s,v)=>s+orderValue(v),0);}
+function currentMonthKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function getReorderParties(){
+  const loMap={};visitsArr().filter(v=>v.status==='order').forEach(v=>{if(!loMap[v.partyId]||v.date>loMap[v.partyId])loMap[v.partyId]=v.date;});
+  const lvMap=buildLastVisitMap();
+  const cut=new Date();cut.setDate(cut.getDate()-30);const cutStr=cut.toISOString().slice(0,10);
+  return PARTIES.filter(p=>{const lo=loMap[p.id];const lv=lvMap[p.id];return lo&&lo<=cutStr&&(!lv||lv<=lo);});
+}
+
+/* ── FIREBASE INIT ── */
+document.addEventListener('fb-ready',()=>{
+  DB=window._db; REF=window._ref; SET=window._set; GET=window._get;
+  ON=window._onValue; PUSH=window._push; UPDATE=window._update; REMOVE=window._remove; OFF=window._off;
+  ADMIN_PWD=window._ADMIN_PASSWORD;
+  setSyncStatus('ok','Connected');
+  document.getElementById('fb-dot').className='sync-dot ok';
+  document.getElementById('fb-status').textContent='Connected — ready to login';
+  loadSPsForLogin();
+});
+
+/* if Firebase config not set yet show helpful message */
+setTimeout(()=>{
+  if(!window._FB_READY){
+    document.getElementById('fb-dot').className='sync-dot err';
+    document.getElementById('fb-status').textContent='Not connected — see setup guide below';
+    showSetupGuide();
+  }
+},4000);
+
+function showSetupGuide(){
+  const g=document.createElement('div');
+  g.style.cssText='margin-top:16px;background:#FDF3E7;border:1px solid #F0C68A;border-radius:10px;padding:14px;font-size:12px;color:#633806;line-height:1.8';
+  g.innerHTML=`<strong>Setup needed:</strong><br>
+1. Go to <a href="https://firebase.google.com" target="_blank" style="color:#1A5C3A">firebase.google.com</a> → Create project<br>
+2. Add a Web app → copy the config values<br>
+3. Open this HTML file in a text editor<br>
+4. Replace the 7 REPLACE_WITH_YOUR_... values at the top<br>
+5. Enable Realtime Database in Firebase console<br>
+6. Set database rules to allow read/write (see instructions)`;
+  document.querySelector('.login-card').appendChild(g);
+}
+
+function setSyncStatus(state,msg){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-lbl');
+  if(!dot)return;
+  dot.className='sync-dot '+state;
+  lbl.textContent=msg;
+}
+
+function loadSPsForLogin(){
+  if(!DB)return;
+  ON(REF('salespersons'),snap=>{
+    const data=snap.val()||{};
+    SALESPERSONS=Object.values(data);
+    const sel=document.getElementById('sp-select');
+    sel.innerHTML='<option value="">Select your name...</option>';
+    SALESPERSONS.forEach(sp=>{
+      const o=document.createElement('option');o.value=sp.id;o.textContent=sp.name;sel.appendChild(o);
+    });
+  });
+}
+
+/* ── LOGIN ── */
+let loginTab='admin';
+function setLoginTab(t){
+  loginTab=t;
+  ['admin','sp'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('login-'+x).style.display=x===t?'block':'none';
+  });
+  document.getElementById('login-error').textContent='';
+}
+
+function pinNext(el,nextId){
+  if(el.value&&nextId)document.getElementById(nextId)?.focus();
+}
+function pinBack(e,prevId){
+  if(e.key==='Backspace'&&!e.target.value&&prevId)document.getElementById(prevId)?.focus();
+}
+
+function doAdminLogin(){
+  if(!DB){document.getElementById('login-error').textContent='Not connected to database yet';return}
+  const pwd=document.getElementById('admin-pwd').value;
+  if(pwd===ADMIN_PWD){
+    currentRole='admin';currentSP=null;
+    bootApp();
+  } else {
+    document.getElementById('login-error').textContent='Incorrect password';
+  }
+}
+
+function doSPLogin(){
+  if(!DB){document.getElementById('login-error').textContent='Not connected yet';return}
+  const spId=document.getElementById('sp-select').value;
+  if(!spId){document.getElementById('login-error').textContent='Please select your name';return}
+  const pin=['p1','p2','p3','p4'].map(id=>document.getElementById(id).value).join('');
+  if(pin.length<4){document.getElementById('login-error').textContent='Enter your 4-digit PIN';return}
+  const sp=SALESPERSONS.find(s=>s.id===spId);
+  if(!sp){document.getElementById('login-error').textContent='Salesperson not found';return}
+  if(sp.pin!==pin){document.getElementById('login-error').textContent='Incorrect PIN';return}
+  currentRole='sp';currentSP=sp;
+  bootApp();
+}
+
+function doLogout(){
+  // detach all listeners
+  _listeners.forEach(({path,fn})=>{try{OFF(REF(path),fn)}catch(e){}});
+  _listeners=[];
+  currentRole=null;currentSP=null;
+  VISITS={};TOURS={};
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('admin-pwd').value='';
+  ['p1','p2','p3','p4'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('views-container').innerHTML='';
+  document.getElementById('nav-tabs-wrap').innerHTML='';
+}
+
+/* ── APP BOOT ── */
+function bootApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  buildNav();
+  subscribeData();
+}
+
+function buildNav(){
+  const wrap=document.getElementById('nav-tabs-wrap');
+  wrap.innerHTML='';
+  const av=document.getElementById('nav-avatar');
+
+  if(currentRole==='admin'){
+    const tabs=[
+      ['dashboard','Dashboard'],['tours','Tours'],['meca','MeCA'],
+      ['prodrep','Products'],['inactive','Inactive'],['payments','Payments'],
+      ['parties','Parties'],['pricelist','Pricelist'],['settings','⚙ Settings']
+    ];
+    tabs.forEach(([v,l],i)=>{
+      const b=document.createElement('button');
+      b.className='nav-tab'+(i===0?' active':'');
+      b.textContent=l;b.id='nav-tab-'+v;
+      b.onclick=()=>switchView(v,b);
+      wrap.appendChild(b);
+    });
+    av.textContent='A';av.style.background='#1A3A5C';av.style.color='white';
+    document.getElementById('nav-tabs-wrap').querySelector('.nav-tab').click();
+  } else {
+    // SP — mobile only view
+    const b=document.createElement('button');
+    b.className='nav-tab active';b.textContent='My Visits';
+    wrap.appendChild(b);
+    av.textContent=currentSP.initials;
+    av.style.background=currentSP.bg;av.style.color=currentSP.color;
+  }
+}
+
+/* ── REAL-TIME DATA SUBSCRIPTION ── */
+function subscribeData(){
+  setSyncStatus('wait','Syncing...');
+  let loaded=0;
+  const check=()=>{if(++loaded>=4){setSyncStatus('ok','Live');afterDataLoaded();}};
+
+  const sub=(path,cb)=>{
+    const fn=snap=>cb(snap.val()||{});
+    ON(REF(path),fn);
+    _listeners.push({path,fn});
+  };
+
+  sub('salespersons',d=>{SALESPERSONS=Object.values(d);check();refreshAll();});
+  sub('parties',d=>{PARTIES=Object.values(d);check();refreshAll();});
+  sub('products',d=>{PRODUCTS=Object.values(d);check();refreshAll();});
+  sub('visits',d=>{VISITS=d;check();refreshAll();});
+  sub('tours',d=>{TOURS=d||{};refreshAll();});
+  sub('targets',d=>{TARGETS=d||{};refreshAll();});
+}
+
+let _afterLoaded=false;
+function afterDataLoaded(){
+  if(_afterLoaded)return;_afterLoaded=true;
+  if(currentRole==='admin'){
+    renderDashboard();
+  } else {
+    renderMobileView();
+  }
+}
+
+let _refreshTimer=null;
+function refreshAll(){
+  if(!_afterLoaded)return;
+  clearTimeout(_refreshTimer);
+  _refreshTimer=setTimeout(()=>{
+    if(currentRole==='admin'){
+      const activeTab=document.querySelector('.nav-tab.active');
+      if(activeTab)refreshView(activeTab.textContent.replace('⚙ ','').toLowerCase().replace(/\s+/g,''));
+    } else {
+      renderMobileView();
+    }
+  },200);
+}
+
+/* ── VIEW SWITCHING ── */
+const VIEW_RENDERERS={
+  dashboard:renderDashboard, tours:renderTours, meca:renderMeCA,
+  prodrep:renderProductReport, inactive:renderInactive, payments:renderPaymentReport,
+  parties:renderParties, pricelist:renderPricelist, settings:renderSettingsView,
+};
+
+function switchView(name,btn){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const key=name.replace('⚙ ','').toLowerCase().replace(/\s+/g,'');
+  refreshView(key);
+}
+
+function refreshView(key){
+  const fn=VIEW_RENDERERS[key];
+  if(fn)fn();
+}
+
+function setViewHTML(html){
+  document.getElementById('views-container').innerHTML=html;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE VIEW (Salesperson)
+   ════════════════════════════════════════════════════════════ */
+function renderMobileView(){
+  const myVisits=visitsArr().filter(v=>v.spId===currentSP.id&&v.date===today())
+    .sort((a,b)=>(a.plannedTime||'99:99').localeCompare(b.plannedTime||'99:99'));
+  const done=myVisits.filter(v=>['order','noorder'].includes(v.status)).length;
+  const orders=myVisits.filter(v=>v.status==='order').length;
+
+  // Active tour for this SP today
+  const activeTour=toursArr().find(t=>t.spId===currentSP.id&&t.fromDate<=today()&&t.toDate>=today());
+
+  let tourBanner='';
+  if(activeTour){
+    tourBanner=`<div style="background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--r-lg);padding:11px 14px;margin-bottom:12px;font-size:12px;color:var(--teal)">
+      <strong>On tour:</strong> ${esc(activeTour.area)} · ${fmtDate(activeTour.fromDate)} – ${fmtDate(activeTour.toDate)}
+      ${activeTour.status==='active'||activeTour.status==='draft'?`<button class="btn btn-teal" style="font-size:11px;padding:3px 10px;margin-left:8px" onclick="openExpenseModal('${activeTour.id}')">Submit expenses</button>`:''}
+      ${activeTour.status==='pending'?'<span style="margin-left:8px;font-weight:500">Expenses: Pending approval</span>':''}
+      ${activeTour.status==='approved'?'<span style="margin-left:8px;color:var(--accent);font-weight:500">✓ Expenses approved</span>':''}
+    </div>`;
+  }
+
+  let cards='';
+  if(!myVisits.length){
+    cards='<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No visits planned today.</div>';
+  } else {
+    cards=myVisits.map(v=>buildVisitCardHTML(v)).join('');
+  }
+
+  const html=`<div class="mobile-shell">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 12px;margin-bottom:12px;box-shadow:var(--shadow)">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Logged in as</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="av" style="width:32px;height:32px;background:${currentSP.bg};color:${currentSP.color};font-size:12px">${esc(currentSP.initials)}</div>
+        <span style="font-size:14px;font-weight:600">${esc(currentSP.name)}</span>
+      </div>
+    </div>
+    ${tourBanner}
+    <div class="day-header">
+      <div class="day-header-top">
+        <div class="greeting">Good day, ${esc(currentSP.name.split(' ')[0])}</div>
+        <div class="date-badge">${new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}</div>
+      </div>
+      <div class="day-stats">
+        <div class="day-stat"><div class="day-stat-num">${myVisits.length}</div><div class="day-stat-lbl">Planned</div></div>
+        <div class="day-stat"><div class="day-stat-num">${done}</div><div class="day-stat-lbl">Done</div></div>
+        <div class="day-stat"><div class="day-stat-num" style="color:var(--accent)">${orders}</div><div class="day-stat-lbl">Orders</div></div>
+      </div>
+    </div>
+    <div class="section-title">Today's visits</div>
+    ${cards}
+    <button class="add-btn" onclick="openAddVisitModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Add visit to plan
+    </button>
+    <button class="add-btn wa" onclick="openWASummary()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 13A6 6 0 107 1a6 6 0 000 12z" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3L9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      WhatsApp day summary
+    </button>
+  </div>`;
+
+  setViewHTML(html);
+}
+
+function buildVisitCardHTML(v){
+  const party=PARTIES.find(p=>p.id===v.partyId)||{name:'Unknown',city:'',phone:'',outstanding:0};
+  const isNew=isNewClient(v.partyId,v.date);
+  const ov=orderValue(v);
+  const bm={planned:'badge-planned',active:'badge-active',order:'badge-order',noorder:'badge-noorder',rescheduled:'badge-resched',feedback:'badge-feedback'};
+
+  let meta='';
+  if(v.status==='planned') meta=`Planned ${fmtTime(v.plannedTime)}`;
+  else if(v.status==='active') meta=`<span style="color:var(--accent)">In since ${fmtTime(v.checkIn)} · GPS marked</span>`;
+  else if(v.status==='rescheduled') meta=`Rescheduled${v.feedback?' · '+esc(v.feedback):''}`;
+  else meta=`${fmtTime(v.checkIn)} – ${fmtTime(v.checkOut)}${dur(v.checkIn,v.checkOut)?' · '+dur(v.checkIn,v.checkOut):''}`;
+
+  const payInfo=v.payment?`<span style="color:var(--teal);margin-left:6px">💰 ${esc(v.payment.mode)} ${fmtMoney(v.payment.amount)}</span>`:'';
+
+  let actions='';
+  if(v.status==='planned'){
+    actions=`<div class="visit-actions">
+      <button class="btn btn-green" onclick="doCheckIn('${v.id}')">Check In</button>
+      <button class="btn btn-amber" onclick="openReschedModal('${v.id}')">Reschedule</button>
+    </div>`;
+  } else if(v.status==='active'){
+    actions=`<div class="visit-actions">
+      <button class="btn btn-blue" onclick="openCheckoutModal('${v.id}')">Check Out + Feedback</button>
+    </div>`;
+  }
+
+  const feedback=(v.feedback&&['order','noorder','feedback'].includes(v.status))?
+    `<div class="visit-done">📝 ${esc(v.feedback)}${v.nextVisit?' · Next: '+fmtDate(v.nextVisit):''}</div>`:'';
+
+  return`<div class="visit-card${v.status==='active'?' active-visit':''}">
+    <div class="visit-card-top">
+      <div style="flex:1;min-width:0">
+        <div class="visit-name">${esc(party.name)}${isNew?' <span class="badge badge-new" style="font-size:10px;padding:1px 6px">New</span>':''}</div>
+        <div class="visit-meta">${meta}</div>
+        ${ov>0?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Order: <span style="font-weight:500;color:var(--accent)">${fmtMoney(ov)}</span>${payInfo}</div>`:payInfo?`<div style="font-size:11px">${payInfo}</div>`:''}
+      </div>
+      <span class="badge ${bm[v.status]||''}">${v.status}</span>
+    </div>
+    <div class="party-strip">
+      <span>${esc(party.city)}</span>
+      ${party.phone?`<span>📞 ${esc(party.phone)}</span>`:''}
+      ${party.outstanding>0?`<span style="color:var(--red)">⚠ Due: ${fmtMoney(party.outstanding)}</span>`:''}
+    </div>
+    ${actions}${feedback}
+  </div>`;
+}
+
+/* ── VISIT ACTIONS ── */
+async function doCheckIn(id){
+  const v=VISITS[id];if(!v)return;
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('visits/'+id),{status:'active',checkIn:nowTime(),gps:{x:15+Math.random()*70,y:15+Math.random()*70}});
+  setSyncStatus('ok','Live');
+  showToast('Checked in · GPS marked');
+}
+
+let coStatus=null,coPayMode=null,coPickerItems={};
+
+function openCheckoutModal(id){
+  const v=VISITS[id];if(!v)return;
+  const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
+  coStatus=null;coPayMode=null;coPickerItems={};
+  document.getElementById('co-visit-id').value=id;
+  document.getElementById('co-title').textContent='Check out — '+party.name;
+  document.getElementById('co-sub').textContent='Checked in at '+fmtTime(v.checkIn);
+  document.getElementById('co-feedback').value='';
+  document.getElementById('co-nextdate').value='';
+  document.getElementById('co-rescheddate').value='';
+  document.getElementById('co-pay-amount').value='';
+  document.getElementById('co-pay-ref').value='';
+  document.getElementById('co-pay-notes').value='';
+  document.getElementById('pay-fields').style.display='none';
+  document.getElementById('order-picker-section').style.display='none';
+  document.getElementById('co-next-date-row').style.display='block';
+  document.getElementById('co-resched-date-row').style.display='none';
+  document.querySelectorAll('.status-pill').forEach(p=>p.className='status-pill');
+  document.querySelectorAll('.pay-pill').forEach(p=>p.classList.remove('selected'));
+  openModal('checkout-modal');
+}
+
+function selStatus(s,btn){
+  coStatus=s;
+  document.querySelectorAll('.status-pill').forEach(p=>p.className='status-pill');
+  btn.className='status-pill sel-'+s;
+  document.getElementById('co-resched-date-row').style.display=s==='rescheduled'?'block':'none';
+  document.getElementById('co-next-date-row').style.display=s==='rescheduled'?'none':'block';
+  if(s==='order'){document.getElementById('order-picker-section').style.display='block';buildOrderPicker();}
+  else document.getElementById('order-picker-section').style.display='none';
+}
+
+function togglePay(btn,mode){
+  if(coPayMode===mode){coPayMode=null;btn.classList.remove('selected');document.getElementById('pay-fields').style.display='none';}
+  else{coPayMode=mode;document.querySelectorAll('.pay-pill').forEach(p=>p.classList.remove('selected'));btn.classList.add('selected');document.getElementById('pay-fields').style.display='block';}
+}
+
+function buildOrderPicker(){
+  const wrap=document.getElementById('order-picker-wrap');
+  if(!PRODUCTS.length){wrap.innerHTML='<div style="padding:12px;color:var(--text2);font-size:12px">No products in master. Admin needs to add products first.</div>';return}
+  const cats=[...new Set(PRODUCTS.map(p=>p.category))];
+  let html='<div class="order-picker"><div class="op-header"><span>Product</span><span>MRP</span><span>Qty</span><span>Total</span></div>';
+  cats.forEach(cat=>{
+    html+=`<div class="op-cat">${esc(cat)}</div>`;
+    PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      html+=`<div class="op-row">
+        <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)} · ${esc(p.unit)}</div>${p.sizes?`<div>${p.sizes.split(',').map(s=>`<span class="size-badge">${esc(s.trim())}</span>`).join('')}</div>`:''}</div>
+        <div class="price-tag">${fmtMoney(p.mrp)}</div>
+        <input type="number" class="qty-input" id="qty-${p.id}" min="0" step="1" placeholder="0" oninput="updQty('${p.id}',this.value)">
+        <div style="font-size:11px;font-weight:500;color:var(--accent)" id="rt-${p.id}">—</div>
+      </div>`;
+    });
+  });
+  html+=`<div class="op-total"><span>Order total</span><span id="op-grand">₹0</span></div></div>`;
+  wrap.innerHTML=html;
+}
+
+function updQty(prodId,val){
+  const qty=parseInt(val)||0;const p=PRODUCTS.find(x=>x.id===prodId);if(!p)return;
+  if(qty>0)coPickerItems[prodId]={qty};else delete coPickerItems[prodId];
+  const rt=document.getElementById('rt-'+prodId);if(rt)rt.textContent=qty>0?fmtMoney(p.mrp*qty):'—';
+  const grand=Object.entries(coPickerItems).reduce((s,[pid,{qty}])=>{const pr=PRODUCTS.find(x=>x.id===pid);return s+(pr?pr.mrp*qty:0)},0);
+  const gt=document.getElementById('op-grand');if(gt)gt.textContent=fmtMoney(grand);
+}
+
+function updPayBalance(){/* no advance in checkout — just show amount */}
+
+async function submitCheckout(){
+  if(!coStatus){showToast('Please select visit outcome');return}
+  const id=document.getElementById('co-visit-id').value;
+  const v=VISITS[id];if(!v)return;
+  const upd={status:coStatus,checkOut:nowTime(),feedback:document.getElementById('co-feedback').value,
+    nextVisit:coStatus==='rescheduled'?document.getElementById('co-rescheddate').value:document.getElementById('co-nextdate').value,
+    orderItems:Object.entries(coPickerItems).map(([prodId,{qty}])=>({prodId,qty}))};
+  if(coPayMode){
+    const amt=parseFloat(document.getElementById('co-pay-amount').value)||0;
+    if(amt<=0){showToast('Enter a valid payment amount');return}
+    upd.payment={mode:coPayMode,amount:amt,ref:document.getElementById('co-pay-ref').value,notes:document.getElementById('co-pay-notes').value,date:today(),spId:v.spId,partyId:v.partyId};
+    // update outstanding
+    const party=PARTIES.find(p=>p.id===v.partyId);
+    if(party){await UPDATE(REF('parties/'+party.id),{outstanding:Math.max(0,(party.outstanding||0)-amt)});}
+  }
+  if(coStatus==='order'){
+    const party=PARTIES.find(p=>p.id===v.partyId);
+    if(party)await UPDATE(REF('parties/'+party.id),{lastOrder:today()});
+  }
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('visits/'+id),upd);
+  setSyncStatus('ok','Live');
+  closeModal('checkout-modal');showToast('Checked out · Visit recorded');
+}
+
+let rsVisitId=null;
+function openReschedModal(id){
+  const v=VISITS[id];if(!v)return;
+  const party=PARTIES.find(p=>p.id===v.partyId)||{name:''};
+  rsVisitId=id;
+  document.getElementById('rs-title').textContent='Reschedule — '+party.name;
+  document.getElementById('rs-sub').textContent='Currently planned at '+fmtTime(v.plannedTime);
+  document.getElementById('rs-date').value=today();document.getElementById('rs-time').value='';document.getElementById('rs-reason').value='';
+  openModal('resched-modal');
+}
+async function submitResched(){
+  const v=VISITS[rsVisitId];if(!v)return;
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('visits/'+rsVisitId),{status:'rescheduled',feedback:document.getElementById('rs-reason').value||'Rescheduled',plannedTime:document.getElementById('rs-time').value||v.plannedTime});
+  setSyncStatus('ok','Live');
+  closeModal('resched-modal');showToast('Rescheduled');
+}
+
+function openAddVisitModal(){
+  const myParties=PARTIES.filter(p=>p.spId===currentSP.id);
+  if(!myParties.length){showToast('No parties assigned to you — ask admin to add parties');return}
+  const sel=document.getElementById('av-party');
+  sel.innerHTML='<option value="">Select party...</option>';
+  myParties.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+(p.city?' ('+p.city+')':'');sel.appendChild(o);});
+  document.getElementById('av-time').value='';document.getElementById('av-notes').value='';document.getElementById('av-date').value=today();
+  document.getElementById('av-party-info').style.display='none';
+  openModal('add-visit-modal');
+}
+function showPartyInfo(partyId){
+  const party=PARTIES.find(p=>p.id===partyId);
+  const info=document.getElementById('av-party-info');
+  if(party){info.style.display='block';info.innerHTML=`${party.contact?'👤 '+esc(party.contact)+' · ':''}📞 ${esc(party.phone||'—')} · ${esc(party.city)}, ${esc(party.state)}${party.outstanding>0?' · <span style="color:var(--red)">⚠ Due: '+fmtMoney(party.outstanding)+'</span>':''}`;}
+  else info.style.display='none';
+}
+async function submitAddVisit(){
+  const partyId=document.getElementById('av-party').value;if(!partyId){showToast('Please select a party');return}
+  const newId=uid();
+  setSyncStatus('wait','Saving...');
+  await SET(REF('visits/'+newId),{id:newId,spId:currentSP.id,partyId,plannedTime:document.getElementById('av-time').value,date:document.getElementById('av-date').value||today(),status:'planned',checkIn:null,checkOut:null,feedback:document.getElementById('av-notes').value,nextVisit:'',orderItems:[],payment:null,gps:{x:15+Math.random()*70,y:15+Math.random()*70}});
+  setSyncStatus('ok','Live');
+  closeModal('add-visit-modal');showToast('Visit added');
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — DASHBOARD
+   ════════════════════════════════════════════════════════════ */
+function renderDashboard(){
+  const va=visitsArr();
+  const todayV=va.filter(v=>v.date===today());
+  const todayOrd=todayV.filter(v=>v.status==='order');
+  const todayOrdVal=todayOrd.reduce((s,v)=>s+orderValue(v),0);
+  const todayPay=todayV.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
+
+  const mc=(num,lbl,sub,color='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${color}">${num}</div><div class="metric-lbl">${lbl}</div><div class="metric-sub">${sub}</div></div>`;
+
+  const bh=s=>{const m={planned:['badge-planned','Planned'],active:['badge-active','In visit'],order:['badge-order','Order recd'],noorder:['badge-noorder','No order'],rescheduled:['badge-resched','Rescheduled'],feedback:['badge-feedback','Follow-up']};const[c,t]=m[s]||['','?'];return`<span class="badge ${c}">${t}</span>`};
+
+  const tableRows=todayV.sort((a,b)=>(a.plannedTime||'99:99').localeCompare(b.plannedTime||'99:99')).map(v=>{
+    const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
+    const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',state:'—'};
+    const ov=orderValue(v);
+    return`<tr>
+      <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
+      <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(party.name)}</td>
+      <td><span class="badge badge-state" style="font-size:10px">${esc(party.state)}</span></td>
+      <td class="time-mono">${fmtTime(v.plannedTime)}</td>
+      <td class="time-mono">${v.checkIn?fmtTime(v.checkIn):'—'}</td>
+      <td class="time-mono">${v.checkOut?fmtTime(v.checkOut):'—'}</td>
+      <td>${dur(v.checkIn,v.checkOut)?`<span class="dur-badge">${dur(v.checkIn,v.checkOut)}</span>`:'—'}</td>
+      <td>${bh(v.status)}</td>
+      <td class="price-tag">${ov>0?fmtMoney(ov):'—'}</td>
+      <td>${v.payment?`<span style="font-size:11px;color:var(--teal);font-weight:500">${esc(v.payment.mode)}<br>${fmtMoney(v.payment.amount)}</span>`:'—'}</td>
+      <td style="max-width:140px;font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.feedback||'—')}</td>
+    </tr>`;
+  }).join('');
+
+  // SP summary
+  const spRows=SALESPERSONS.map(sp=>{
+    const myV=todayV.filter(v=>v.spId===sp.id);
+    const tot=myV.length,done=myV.filter(v=>['order','noorder'].includes(v.status)).length,ord=myV.filter(v=>v.status==='order').length;
+    const pct=tot?Math.round(done/tot*100):0;
+    return`<div class="sp-row">
+      <div class="av" style="width:26px;height:26px;background:${sp.bg};color:${sp.color};font-size:10px;flex-shrink:0">${esc(sp.initials)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${esc(sp.name.split(' ')[0])}</div><div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${pct}%;background:${sp.color}"></div></div></div>
+      <div style="font-size:11px;color:var(--text2);text-align:right">${done}/${tot}<br>${ord} orders</div>
+    </div>`;
+  }).join('');
+
+  // Feedback
+  const fbItems=va.filter(v=>v.feedback&&v.feedback.trim()).slice(-6).reverse().map(v=>{
+    const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
+    const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
+    return`<div class="feedback-item">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:13px;font-weight:600">${esc(sp.name.split(' ')[0])} → ${esc(party.name)}</div><span class="badge badge-${v.status==='order'?'order':v.status==='noorder'?'noorder':'planned'}" style="font-size:10px;padding:2px 6px">${v.status}</span></div>
+      <div class="feedback-text">${esc(v.feedback)}</div>
+      ${v.nextVisit?`<div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:500">Next: ${fmtDate(v.nextVisit)}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Map pins
+  const colorMap={order:'#1A5C3A',active:'#378ADD',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990'};
+  const pins=todayV.filter(v=>v.gps).map(v=>{
+    const party=PARTIES.find(p=>p.id===v.partyId);
+    return`<div class="map-pin" style="left:${v.gps.x}%;top:${v.gps.y}%;background:${colorMap[v.status]||'#999'}" title="${party?party.name:''}"></div>`;
+  }).join('');
+
+  setViewHTML(`<div class="admin-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">Daily Report</div><div class="admin-sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+      <div class="filter-row" id="dash-filters">
+        <select class="filter-select" id="df-state" onchange="renderDashboard()"><option value="all">All states</option>${[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort().map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+        <select class="filter-select" id="df-sp" onchange="renderDashboard()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option></select>
+      </div>
+    </div>
+    <div class="metrics-row">
+      ${mc(todayV.length,'Visits today','All salespersons')}
+      ${mc(todayV.filter(v=>['order','noorder'].includes(v.status)).length,'Completed',todayOrd.length+' with orders')}
+      ${mc(fmtMoney(todayOrdVal),'Order value today',todayOrd.length+' orders','var(--accent)')}
+      ${mc(fmtMoney(todayPay),'Collected today',todayV.filter(v=>v.payment).length+' payments','var(--teal)')}
+    </div>
+    <div class="admin-grid">
+      <div>
+        <div class="card">
+          <div class="card-header">Visit plan & status <span class="card-header-sub">${todayV.length} visits</span></div>
+          <div class="tbl-scroll"><table class="tbl">
+            <thead><tr><th>SP</th><th>Party</th><th>State</th><th>Planned</th><th>In</th><th>Out</th><th>Dur</th><th>Status</th><th>Order value</th><th>Payment</th><th>Feedback</th></tr></thead>
+            <tbody>${tableRows||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text2)">No visits today</td></tr>'}</tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="right-col">
+        <div class="card">
+          <div class="card-header">GPS visit map</div>
+          <div class="map-area">
+            <div class="map-grid"></div>
+            <div class="map-road-h" style="top:35%;left:0;right:0"></div>
+            <div class="map-road-h" style="top:68%;left:0;right:0"></div>
+            <div class="map-road-v" style="left:28%;top:0;bottom:0"></div>
+            <div class="map-road-v" style="left:72%;top:0;bottom:0"></div>
+            ${pins}
+            <div class="map-legend">
+              <span><span class="legend-dot" style="background:#1A5C3A"></span>Order</span>
+              <span><span class="legend-dot" style="background:#378ADD"></span>Active</span>
+              <span><span class="legend-dot" style="background:#C0392B"></span>No order</span>
+            </div>
+          </div>
+        </div>
+        <div class="card"><div class="card-header">SP summary</div>${spRows||'<div style="padding:16px;font-size:12px;color:var(--text2)">No salespersons yet</div>'}</div>
+        <div class="card"><div class="card-header">Feedback log</div>${fbItems||'<div style="padding:16px;font-size:12px;color:var(--text2)">No feedback yet</div>'}</div>
+      </div>
+    </div>
+  </div>`);
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — TOURS
+   ════════════════════════════════════════════════════════════ */
+function renderTours(){
+  const ta=toursArr().sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
+  const roiRows=ta.map(t=>{
+    const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;
+    const tv=tourVisits(t);const orders=tv.filter(v=>v.status==='order').length;
+    const ov=tourOrderValue(t);const exp=t.expenseAmount||0;const adv=t.advance||0;
+    const bal=adv-exp;const profit=ov-exp;
+    const roi=exp>0?+(ov/exp).toFixed(1):null;
+    const rc=roi===null?'':roi>=3?'roi-good':roi>=1.5?'roi-ok':'roi-bad';
+    const sm={active:'tour-active',pending:'tour-pending',approved:'tour-approved',rejected:'tour-rejected',draft:'tour-draft'};
+    return`<tr>
+      <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
+      <td style="font-weight:500">${esc(t.area)}</td>
+      <td class="time-mono" style="white-space:nowrap">${fmtDate(t.fromDate)}–${fmtDate(t.toDate)}</td>
+      <td style="text-align:center">${tv.length}</td><td style="text-align:center">${orders}</td>
+      <td class="price-tag">${fmtMoney(ov)}</td>
+      <td class="price-tag">${adv>0?fmtMoney(adv):'—'}</td>
+      <td class="price-tag">${exp>0?fmtMoney(exp):'—'}</td>
+      <td style="font-weight:500;color:${bal>=0?'var(--accent)':'var(--red)'}">${exp>0?fmtMoney(Math.abs(bal))+(bal>=0?' ↩':' ↪'):'—'}</td>
+      <td style="font-weight:500;color:${profit>=0?'var(--accent)':'var(--red)'}">${exp>0?fmtMoney(profit):'—'}</td>
+      <td><span class="roi-badge ${rc}">${roi===null?'—':roi+'x'}</span></td>
+      <td><span class="tour-badge ${sm[t.status]||'tour-draft'}">${t.status||'draft'}</span></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${t.status==='pending'?`<button class="icon-btn" onclick="openApproveModal('${t.id}')">Review</button>`:''}
+        <button class="icon-btn" onclick="openTourModal('${t.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteTour('${t.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Monthly targets bar
+  const mk=currentMonthKey();const monthTargets=TARGETS[mk]||{};
+  const d=new Date();
+  const mFrom=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+  const mTo=new Date(d.getFullYear(),d.getMonth()+1,0).toISOString().slice(0,10);
+  const targetBars=Object.keys(monthTargets).map(spId=>{
+    const sp=SALESPERSONS.find(s=>s.id===spId);if(!sp)return'';
+    const target=monthTargets[spId];
+    const actual=visitsArr().filter(v=>v.spId===spId&&v.status==='order'&&v.date>=mFrom&&v.date<=mTo).reduce((s,v)=>s+orderValue(v),0);
+    const pct=Math.min(Math.round(actual/target*100),100);
+    const over=actual>target;
+    return`<div class="target-row">
+      <div class="target-name" title="${esc(sp.name)}">${esc(sp.name.split(' ')[0])}</div>
+      <div class="target-track"><div class="target-fill${over?' over':''}" style="width:${pct}%"></div></div>
+      <div class="target-pct" style="color:${pct>=100?'var(--accent)':pct>=60?'var(--amber)':'var(--red)'}">${pct}%</div>
+      <div class="target-val">${fmtMoney(actual)} / ${fmtMoney(target)}</div>
+    </div>`;
+  }).join('');
+
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">Tours</div></div>
+      <div class="filter-row">
+        <select class="filter-select" id="tour-sp-f" onchange="renderTours()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="tour-st-f" onchange="renderTours()"><option value="all">All statuses</option><option value="active">Active</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
+        <button class="btn btn-green" onclick="openTourModal()">+ New tour</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Monthly targets vs achievement<button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="openTargetModal()">Set targets</button></div>
+      <div style="padding:14px 16px">${targetBars||'<div style="font-size:12px;color:var(--text2)">No targets set. Click "Set targets" above.</div>'}</div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Tour ROI — expenses vs orders</div>
+      <div class="tbl-scroll"><table class="tbl">
+        <thead><tr><th>SP</th><th>Tour</th><th>Dates</th><th>Visits</th><th>Orders</th><th>Order value</th><th>Advance</th><th>Expense</th><th>Balance</th><th>Profit</th><th>ROI</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${roiRows||'<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text2)">No tours yet</td></tr>'}</tbody>
+      </table></div>
+    </div>
+    ${ta.map(t=>buildTourCardHTML(t)).join('')}
+  </div>`);
+}
+
+function buildTourCardHTML(t){
+  const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;
+  const tv=tourVisits(t);const completed=tv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut).length;
+  const orders=tv.filter(v=>v.status==='order').length;const ov=tourOrderValue(t);
+  const exp=t.expenseAmount||0;const adv=t.advance||0;const days=daysBetween(t.fromDate,t.toDate)+1;
+  const sm={active:'tour-active',pending:'tour-pending',approved:'tour-approved',rejected:'tour-rejected',draft:'tour-draft'};
+  let advBar='';
+  if(adv>0&&exp>0){const pct=Math.min(Math.round(exp/adv*100),100);const over=exp>adv;
+    advBar=`<div class="advance-bar"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text2)">Advance: ${fmtMoney(adv)}</span><span style="color:var(--text2)">Spent: ${fmtMoney(exp)}</span><span style="font-weight:600;color:${over?'var(--red)':'var(--accent)'}">${over?'Over by '+fmtMoney(exp-adv):'Return: '+fmtMoney(adv-exp)}</span></div><div class="advance-track"><div class="advance-fill${over?' over':''}" style="width:${pct}%"></div></div></div>`;}
+  let actions='';
+  if(t.status==='pending') actions+=`<button class="btn btn-amber" onclick="openApproveModal('${t.id}')">Review expense</button>`;
+  if(t.status==='approved') actions+=`<span style="font-size:12px;color:var(--accent);font-weight:500">✓ Approved${t.adminNote?' · '+esc(t.adminNote):''}</span>`;
+  if(t.status==='rejected') actions+=`<span style="font-size:12px;color:var(--red);font-weight:500">✗ Rejected${t.adminNote?' · '+esc(t.adminNote):''}</span>`;
+  actions+=`<button class="btn btn-outline" onclick="openTourModal('${t.id}')">Edit</button>`;
+  return`<div class="tour-card">
+    <div class="tour-card-header">
+      <div>
+        <div style="font-size:15px;font-weight:600">${esc(t.area)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">
+          <span class="av" style="width:18px;height:18px;background:${sp.bg};color:${sp.color};font-size:9px;display:inline-flex;border-radius:50%;align-items:center;justify-content:center;vertical-align:middle">${esc(sp.initials)}</span>
+          ${esc(sp.name.split(' ')[0])} · ${fmtDate(t.fromDate)} – ${fmtDate(t.toDate)} · ${days} day${days>1?'s':''}${t.notes?' · '+esc(t.notes):''}
+        </div>
+      </div>
+      <span class="tour-badge ${sm[t.status]||'tour-draft'}">${t.status||'Draft'}</span>
+    </div>
+    ${advBar}
+    <div class="tour-stats">
+      <div class="tour-stat"><div class="tour-stat-num">${tv.length}</div><div class="tour-stat-lbl">Visits</div></div>
+      <div class="tour-stat"><div class="tour-stat-num">${completed}</div><div class="tour-stat-lbl">Completed</div></div>
+      <div class="tour-stat"><div class="tour-stat-num">${orders}</div><div class="tour-stat-lbl">Orders</div></div>
+      <div class="tour-stat"><div class="tour-stat-num" style="color:var(--accent)">${fmtMoney(ov)}</div><div class="tour-stat-lbl">Order value</div></div>
+      <div class="tour-stat"><div class="tour-stat-num" style="color:${exp>0?'var(--amber)':'var(--text3)'}">${exp>0?fmtMoney(exp):'—'}</div><div class="tour-stat-lbl">Expenses</div></div>
+    </div>
+    ${actions?`<div class="tour-actions">${actions}</div>`:''}
+  </div>`;
+}
+
+function openTourModal(editId){
+  if(!SALESPERSONS.length){showToast('Add salespersons first');return}
+  const sel=document.getElementById('tm-sp');sel.innerHTML='';
+  SALESPERSONS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sel.appendChild(o);});
+  document.getElementById('tour-modal-title').textContent=editId?'Edit tour':'New tour';
+  document.getElementById('tm-edit-id').value=editId||'';
+  if(editId){const t=TOURS[editId];if(!t)return;sel.value=t.spId;document.getElementById('tm-area').value=t.area||'';document.getElementById('tm-from').value=t.fromDate||'';document.getElementById('tm-to').value=t.toDate||'';document.getElementById('tm-advance').value=t.advance||'';document.getElementById('tm-notes').value=t.notes||'';}
+  else{['tm-area','tm-advance','tm-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('tm-from').value=today();document.getElementById('tm-to').value=today();}
+  openModal('tour-modal');
+}
+async function submitTour(){
+  const spId=document.getElementById('tm-sp').value;const area=document.getElementById('tm-area').value.trim();
+  const fromDate=document.getElementById('tm-from').value;const toDate=document.getElementById('tm-to').value;
+  if(!spId||!area||!fromDate||!toDate){showToast('SP, area and dates required');return}
+  if(toDate<fromDate){showToast('End date must be after start date');return}
+  const editId=document.getElementById('tm-edit-id').value;
+  const data={spId,area,fromDate,toDate,advance:parseFloat(document.getElementById('tm-advance').value)||0,notes:document.getElementById('tm-notes').value.trim(),status:editId?(TOURS[editId]?.status||'active'):'active'};
+  setSyncStatus('wait','Saving...');
+  if(editId) await UPDATE(REF('tours/'+editId),data);
+  else{const id=uid();await SET(REF('tours/'+id),{id,...data,expenseAmount:0,expenseNotes:'',adminNote:''});}
+  setSyncStatus('ok','Live');closeModal('tour-modal');showToast(editId?'Tour updated':'Tour created');
+}
+async function deleteTour(id){if(!confirm('Delete this tour?'))return;await REMOVE(REF('tours/'+id));showToast('Tour deleted');}
+
+function openExpenseModal(tourId){
+  const t=TOURS[tourId];if(!t)return;
+  const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;
+  const tv=tourVisits(t);const ov=tourOrderValue(t);
+  document.getElementById('exp-tour-id').value=tourId;
+  document.getElementById('exp-title').textContent='Submit expenses — '+esc(t.area);
+  document.getElementById('exp-sub').textContent=fmtDate(t.fromDate)+' to '+fmtDate(t.toDate)+' · '+sp.name;
+  document.getElementById('exp-summary').innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px">
+    <span><span style="color:var(--text2)">Visits: </span><strong>${tv.length}</strong></span>
+    <span><span style="color:var(--text2)">Orders: </span><strong>${tv.filter(v=>v.status==='order').length}</strong></span>
+    <span><span style="color:var(--text2)">Order value: </span><strong style="color:var(--accent)">${fmtMoney(ov)}</strong></span>
+    <span><span style="color:var(--text2)">Advance: </span><strong style="color:var(--teal)">${fmtMoney(t.advance||0)}</strong></span>
+  </div>`;
+  document.getElementById('exp-amount').value=t.expenseAmount||'';document.getElementById('exp-notes').value=t.expenseNotes||'';
+  document.getElementById('exp-balance-row').style.display=t.advance>0?'block':'none';
+  if(t.advance>0)updExpBalance();
+  openModal('expense-modal');
+}
+function updExpBalance(){
+  const tourId=document.getElementById('exp-tour-id').value;const t=TOURS[tourId];if(!t||!t.advance)return;
+  const spent=parseFloat(document.getElementById('exp-amount').value)||0;const bal=t.advance-spent;
+  document.getElementById('exp-balance-row').style.display='block';
+  document.getElementById('exp-adv-lbl').textContent=fmtMoney(t.advance);
+  document.getElementById('exp-spent-lbl').textContent=fmtMoney(spent);
+  document.getElementById('exp-bal-label').textContent=bal>=0?'Balance to return':'Extra to reimburse';
+  document.getElementById('exp-bal-val').textContent=fmtMoney(Math.abs(bal));
+  document.getElementById('exp-bal-val').style.color=bal>=0?'var(--accent)':'var(--red)';
+}
+async function submitExpense(){
+  const tourId=document.getElementById('exp-tour-id').value;const t=TOURS[tourId];if(!t)return;
+  const amount=parseFloat(document.getElementById('exp-amount').value)||0;
+  if(amount<=0){showToast('Enter a valid expense amount');return}
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('tours/'+tourId),{expenseAmount:amount,expenseNotes:document.getElementById('exp-notes').value,status:'pending',adminNote:''});
+  setSyncStatus('ok','Live');closeModal('expense-modal');showToast('Expenses submitted for approval');
+}
+function openApproveModal(tourId){
+  const t=TOURS[tourId];if(!t)return;
+  const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;const ov=tourOrderValue(t);
+  document.getElementById('appr-tour-id').value=tourId;
+  document.getElementById('appr-title').textContent='Review — '+esc(t.area);
+  document.getElementById('appr-details').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+    <div><span style="color:var(--text2)">Salesperson</span><br><strong>${esc(sp.name)}</strong></div>
+    <div><span style="color:var(--text2)">Dates</span><br><strong>${fmtDate(t.fromDate)} – ${fmtDate(t.toDate)}</strong></div>
+    <div><span style="color:var(--text2)">Advance given</span><br><strong style="color:var(--teal)">${fmtMoney(t.advance||0)}</strong></div>
+    <div><span style="color:var(--text2)">Expense claimed</span><br><strong style="color:var(--amber)">${fmtMoney(t.expenseAmount||0)}</strong></div>
+    <div><span style="color:var(--text2)">Order value</span><br><strong style="color:var(--accent)">${fmtMoney(ov)}</strong></div>
+    <div><span style="color:var(--text2)">Balance</span><br><strong style="color:${(t.advance||0)>=(t.expenseAmount||0)?'var(--accent)':'var(--red)'}">${fmtMoney(Math.abs((t.advance||0)-(t.expenseAmount||0)))}</strong></div>
+  </div>${t.expenseNotes?`<div style="margin-top:8px;font-size:12px;color:var(--text2)">Notes: ${esc(t.expenseNotes)}</div>`:''}`;
+  document.getElementById('appr-note').value='';openModal('approve-modal');
+}
+async function approveExpense(approved){
+  const tourId=document.getElementById('appr-tour-id').value;
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('tours/'+tourId),{status:approved?'approved':'rejected',adminNote:document.getElementById('appr-note').value.trim()});
+  setSyncStatus('ok','Live');closeModal('approve-modal');showToast(approved?'Expense approved':'Expense rejected');
+}
+function openTargetModal(){
+  if(!SALESPERSONS.length){showToast('Add salespersons first');return}
+  const mk=currentMonthKey();document.getElementById('target-month-key').value=mk;
+  const d=new Date();document.getElementById('target-modal-sub').textContent='Targets for '+d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const wrap=document.getElementById('target-sp-inputs');wrap.innerHTML='';
+  SALESPERSONS.forEach(sp=>{
+    const cur=(TARGETS[mk]&&TARGETS[mk][sp.id])||0;
+    const div=document.createElement('div');div.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:10px';
+    div.innerHTML=`<div class="av" style="width:28px;height:28px;background:${sp.bg};color:${sp.color};font-size:11px;flex-shrink:0">${esc(sp.initials)}</div><span style="font-size:13px;flex:1">${esc(sp.name.split(' ')[0])}</span><input type="number" class="form-input" id="tgt-${sp.id}" value="${cur||''}" placeholder="₹ target" min="0" style="margin:0;width:130px">`;
+    wrap.appendChild(div);
+  });
+  openModal('target-modal');
+}
+async function submitTargets(){
+  const mk=document.getElementById('target-month-key').value;const upd={};
+  SALESPERSONS.forEach(sp=>{const val=parseFloat(document.getElementById('tgt-'+sp.id)?.value)||0;if(val>0)upd[sp.id]=val;});
+  setSyncStatus('wait','Saving...');
+  await SET(REF('targets/'+mk),Object.keys(upd).length?upd:null);
+  setSyncStatus('ok','Live');closeModal('target-modal');showToast('Targets saved');
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — MeCA
+   ════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   MeCA — CORRECT DEFINITION (confirmed with user)
+   ─────────────────────────────────────────────────────────
+   Me = unique parties visited (at least 1 completed check-in+out)
+        Same party visited 10 times = still 1 Me
+   C  = unique parties who placed any order (ever, no time limit)
+        ÷ total unique parties visited (Me)
+   A  = total order value from converted parties
+        ÷ number of converted parties
+        (all their orders in the date range, not just first)
+   Revenue = Me × C × A
+   ─────────────────────────────────────────────────────────
+   New    = party has NO order anywhere in history before date range
+   Existing = party has at least one order before the date range
+   ═══════════════════════════════════════════════════════════ */
+function calcMeCA(visitsArray){
+  // Step 1: unique parties that had at least one completed visit
+  const completedVisits=visitsArray.filter(v=>
+    ['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut
+  );
+  const uniquePartyIds=[...new Set(completedVisits.map(v=>v.partyId))];
+  const Me=uniquePartyIds.length;
+  if(Me===0) return{Me:0,C:0,A:0,clients:0,revenue:0,converted:0};
+
+  // Step 2: which of those unique parties have EVER placed an order
+  // (anywhere in full visit history, no time limit)
+  const convertedPartyIds=uniquePartyIds.filter(partyId=>
+    visitsArr().some(v=>v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut)
+  );
+  const converted=convertedPartyIds.length;
+  const C=Math.round(converted/Me*100);
+
+  // Step 3: A = total order value from converted parties (orders in full history)
+  // ÷ number of converted parties
+  const totalOrderVal=convertedPartyIds.reduce((sum,partyId)=>{
+    const partyOrders=visitsArr().filter(v=>
+      v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut
+    );
+    return sum+partyOrders.reduce((s,v)=>s+orderValue(v),0);
+  },0);
+  const A=converted>0?Math.round(totalOrderVal/converted):0;
+
+  const revenue=Math.round(Me*(C/100)*A);
+  return{Me,C,A,clients:converted,revenue,converted};
+}
+
+/* Helper: is this party a "new" client at the time of the date range?
+   New = has NO completed order visit BEFORE the range start date
+   Existing = has at least one order visit before the range start date */
+function isNewClientForRange(partyId, rangeFrom){
+  return !visitsArr().some(v=>
+    v.partyId===partyId&&
+    v.status==='order'&&
+    v.checkIn&&v.checkOut&&
+    v.date<rangeFrom
+  );
+}
+
+function renderMeCA(){
+  const now=new Date();
+  const fromDefault=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+  const toDefault=today();
+
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar"><div><div class="admin-title">MeCA Analysis</div><div class="admin-sub">Me × C = Clients · Clients × A = Revenue</div></div></div>
+    <div class="meca-formula-bar">
+      <div style="font-size:12px;font-weight:600;color:var(--text2)">The MeCA Formula — S.I.N.G. (Sales Is a Number Game)</div>
+      <div class="meca-eq">
+        <span class="meca-var me">Me <span style="font-weight:400;font-size:11px">Unique parties met</span></span>
+        <span class="meca-op">×</span>
+        <span class="meca-var c">C <span style="font-weight:400;font-size:11px">Conversion %</span></span>
+        <span class="meca-op">×</span>
+        <span class="meca-var a">A <span style="font-weight:400;font-size:11px">Avg sale per client</span></span>
+        <span class="meca-op">=</span>
+        <span class="meca-var rev">REVENUE</span>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3);line-height:1.7">
+        <strong style="color:var(--text2)">Me</strong> = unique parties with at least 1 completed visit &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">C</strong> = parties who ever placed an order ÷ Me &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">A</strong> = total orders value ÷ converted parties &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">New</strong> = no order history before range &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">Existing</strong> = ordered before range
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      <span style="font-size:12px;font-weight:600;color:var(--text2)">Date range:</span>
+      <input type="date" class="filter-select" id="meca-from" value="${fromDefault}" onchange="refreshMeCAContent()">
+      <span style="font-size:13px;color:var(--text2)">to</span>
+      <input type="date" class="filter-select" id="meca-to" value="${toDefault}" onchange="refreshMeCAContent()">
+      <button class="btn btn-outline" onclick="setMecaPreset('month')">This month</button>
+      <button class="btn btn-outline" onclick="setMecaPreset('quarter')">This quarter</button>
+      <select class="filter-select" id="meca-sp-f" onchange="refreshMeCAContent()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+    </div>
+    <div id="meca-content"></div>
+  </div>`);
+  refreshMeCAContent();
+}
+
+function setMecaPreset(p){
+  const now=new Date();
+  if(p==='month'){document.getElementById('meca-from').value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);}
+  else{const qs=Math.floor(now.getMonth()/3)*3;document.getElementById('meca-from').value=new Date(now.getFullYear(),qs,1).toISOString().slice(0,10);}
+  document.getElementById('meca-to').value=today();refreshMeCAContent();
+}
+
+function refreshMeCAContent(){
+  const from=document.getElementById('meca-from')?.value;const to=document.getElementById('meca-to')?.value;
+  const spF=document.getElementById('meca-sp-f')?.value||'all';if(!from||!to)return;
+  let fv=visitsArr().filter(v=>v.date>=from&&v.date<=to);
+  if(spF!=='all')fv=fv.filter(v=>v.spId===spF);
+  // New = party has no order history before range start
+  // Existing = party has at least one order before range start
+  const newPartyIds=new Set(
+    [...new Set(fv.map(v=>v.partyId))].filter(pid=>isNewClientForRange(pid,from))
+  );
+  const mNew=calcMeCA(fv.filter(v=>newPartyIds.has(v.partyId)));
+  const mExist=calcMeCA(fv.filter(v=>!newPartyIds.has(v.partyId)));
+  const mTotal=calcMeCA(fv);
+
+  const mc=(m,title,tagClass,tagText)=>`<div class="meca-card">
+    <div class="card-header" style="border-bottom:1px solid var(--border)">${title} <span class="badge ${tagClass}" style="font-size:10px">${tagText}</span></div>
+    <div class="meca-metrics">
+      <div class="meca-metric"><div class="meca-metric-num">${m.Me}</div><div class="meca-metric-lbl">Me</div><div style="font-size:10px;color:var(--text3)">Meetings</div></div>
+      <div class="meca-metric"><div class="meca-metric-num" style="color:${m.C>=50?'var(--accent)':'var(--red)'}">${m.C}%</div><div class="meca-metric-lbl">C</div><div style="font-size:10px;color:var(--text3)">Conversion</div></div>
+      <div class="meca-metric"><div class="meca-metric-num">${fmtMoney(m.A)}</div><div class="meca-metric-lbl">A</div><div style="font-size:10px;color:var(--text3)">Avg sale</div></div>
+    </div>
+    <div class="meca-revenue-row"><div style="font-size:12px;color:var(--text2)">${m.Me} × ${m.C}% × ${fmtMoney(m.A)} =</div><div style="font-size:20px;font-weight:600;color:var(--accent)">${fmtMoney(m.revenue)}</div></div>
+    <div class="meca-formula-steps"><span>${m.Me}</span> unique parties × <span>${m.C}%</span> conv = <span>${m.clients}</span> clients · × avg <span>${fmtMoney(m.A)}</span> = <span>${fmtMoney(m.revenue)}</span> revenue</div>
+  </div>`;
+
+  const spRows=SALESPERSONS.map(sp=>{
+    const sv=fv.filter(v=>v.spId===sp.id);const m=calcMeCA(sv);
+    const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut).length;
+    return`<div class="sp-meca-row">
+      <div class="sp-meca-cell"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></div>
+      <div class="sp-meca-cell" style="font-weight:600">${m.Me}<div style="font-size:10px;color:var(--text3);font-weight:400">${totalVisits} visits</div></div>
+      <div class="sp-meca-cell">${m.converted}</div>
+      <div class="sp-meca-cell" style="color:${m.C>=50?'var(--accent)':'var(--red)'};font-weight:500">${m.C}%</div>
+      <div class="sp-meca-cell price-tag">${fmtMoney(m.A)}</div>
+      <div class="sp-meca-cell" style="font-weight:600;color:var(--accent)">${fmtMoney(m.revenue)}</div>
+    </div>`;
+  }).join('');
+
+  // Monthly trend
+  const months=[];for(let i=3;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push({year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})});}
+  let totMe=0,totC=0,totA=0,totRev=0,cnt=0;
+  const mRows=months.map(({year,month,label})=>{
+    const mFrom=new Date(year,month,1).toISOString().slice(0,10);const mTo=new Date(year,month+1,0).toISOString().slice(0,10);
+    let mv=visitsArr().filter(v=>v.date>=mFrom&&v.date<=mTo);if(spF!=='all')mv=mv.filter(v=>v.spId===spF);
+    const m=calcMeCA(mv);if(m.Me>0){totMe+=m.Me;totC+=m.C;totA+=m.A;totRev+=m.revenue;cnt++;}
+    return`<tr><td>${label}</td><td>${m.Me}</td><td style="color:${m.C>=50?'var(--accent)':'var(--red)'}">${m.C}%</td><td class="price-tag">${fmtMoney(m.A)}</td><td style="font-weight:500;color:var(--accent)">${fmtMoney(m.revenue)}</td><td>${m.converted}</td></tr>`;
+  }).join('');
+  const avg={Me:cnt?Math.round(totMe/cnt):0,C:cnt?Math.round(totC/cnt):0,A:cnt?Math.round(totA/cnt):0,Rev:cnt?Math.round(totRev/cnt):0};
+
+  document.getElementById('meca-content').innerHTML=`
+    <div class="meca-grid">
+      ${mc(mExist,'Existing clients','badge-order','Returning')}
+      ${mc(mNew,'New clients','badge-new','First time')}
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">MeCA by salesperson</div>
+      <div style="overflow-x:auto">
+        <div class="sp-meca-row" style="background:var(--surface2);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">
+          <div class="sp-meca-cell">Salesperson</div><div class="sp-meca-cell">Meetings</div><div class="sp-meca-cell">Converted</div><div class="sp-meca-cell">Conv. %</div><div class="sp-meca-cell">Avg sale</div><div class="sp-meca-cell">Revenue</div>
+        </div>
+        ${spRows}
+        <div class="sp-meca-row" style="background:var(--surface2);font-weight:600">
+          <div class="sp-meca-cell">TOTAL</div><div class="sp-meca-cell">${mTotal.Me}</div><div class="sp-meca-cell">${mTotal.converted}</div><div class="sp-meca-cell">${mTotal.C}%</div><div class="sp-meca-cell price-tag">${fmtMoney(mTotal.A)}</div><div class="sp-meca-cell" style="color:var(--accent)">${fmtMoney(mTotal.revenue)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Monthly trend <span class="card-header-sub">Q avg shown in last row</span></div>
+      <div class="tbl-scroll"><table class="tbl meca-monthly">
+        <thead><tr><th>Month</th><th>Me</th><th>C (%)</th><th>A (₹)</th><th>Revenue</th><th>Converted</th></tr></thead>
+        <tbody>${mRows}<tr><td>Q Avg</td><td>${avg.Me}</td><td>${avg.C}%</td><td class="price-tag">${fmtMoney(avg.A)}</td><td style="color:var(--accent)">${fmtMoney(avg.Rev)}</td><td>—</td></tr></tbody>
+      </table></div>
+    </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — PRODUCT REPORT
+   ════════════════════════════════════════════════════════════ */
+function renderProductReport(){
+  const now=new Date();
+  const fromDef=new Date(now.getFullYear(),now.getMonth()-2,1).toISOString().slice(0,10);
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar"><div><div class="admin-title">Product-wise Order Report</div></div>
+      <div class="filter-row">
+        <input type="date" class="filter-select" id="pr-from" value="${fromDef}" onchange="refreshPR()">
+        <span style="font-size:13px;color:var(--text2)">to</span>
+        <input type="date" class="filter-select" id="pr-to" value="${today()}" onchange="refreshPR()">
+        <select class="filter-select" id="pr-sp" onchange="refreshPR()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="pr-cat" onchange="refreshPR()"><option value="all">All categories</option>${[...new Set(PRODUCTS.map(p=>p.category))].sort().map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="metrics-row" id="pr-metrics"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card"><div class="card-header">Top products by qty</div><div style="padding:14px 16px" id="pr-qty"></div></div>
+      <div class="card"><div class="card-header">Top products by value</div><div style="padding:14px 16px" id="pr-val"></div></div>
+    </div>
+    <div class="card"><div class="card-header">By salesperson</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>SP</th><th>Product</th><th>Category</th><th>Qty</th><th>Value</th><th>Orders</th></tr></thead><tbody id="pr-sp-rows"></tbody></table></div></div>
+  </div>`);
+  refreshPR();
+}
+function refreshPR(){
+  const from=document.getElementById('pr-from')?.value;const to=document.getElementById('pr-to')?.value;
+  const spF=document.getElementById('pr-sp')?.value||'all';const catF=document.getElementById('pr-cat')?.value||'all';
+  if(!from||!to)return;
+  let filtered=visitsArr().filter(v=>v.status==='order'&&v.date>=from&&v.date<=to);
+  if(spF!=='all')filtered=filtered.filter(v=>v.spId===spF);
+  const pm={};
+  filtered.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!pm[i.prodId])pm[i.prodId]={prod:p,qty:0,value:0,orders:0};pm[i.prodId].qty+=i.qty;pm[i.prodId].value+=p.mrp*i.qty;pm[i.prodId].orders++;});});
+  const pl=Object.values(pm).sort((a,b)=>b.qty-a.qty);
+  const totQty=pl.reduce((s,x)=>s+x.qty,0),totVal=pl.reduce((s,x)=>s+x.value,0);
+  const mc=(num,lbl)=>`<div class="metric-card"><div class="metric-num">${num}</div><div class="metric-lbl">${lbl}</div></div>`;
+  document.getElementById('pr-metrics').innerHTML=mc(filtered.length,'Orders')+mc(pl.length,'Products')+mc(totQty,'Total units')+`<div class="metric-card"><div class="metric-num" style="color:var(--accent)">${fmtMoney(totVal)}</div><div class="metric-lbl">Total value</div></div>`;
+  const maxQ=pl[0]?.qty||1;const byV=[...pl].sort((a,b)=>b.value-a.value);const maxV=byV[0]?.value||1;
+  const bar=(x,max,color='var(--accent)')=>`<div class="prod-bar-row"><div class="prod-bar-name" title="${esc(x.prod.name)}">${esc(x.prod.name)}</div><div class="prod-bar-bg"><div class="prod-bar-fill" style="width:${Math.round(x.qty/max*100)}%;background:${color}"></div></div><div class="prod-bar-val">${x.qty}</div></div>`;
+  document.getElementById('pr-qty').innerHTML=pl.slice(0,8).map(x=>bar(x,maxQ)).join('')||'<div style="padding:12px;color:var(--text2);font-size:12px">No orders in period</div>';
+  document.getElementById('pr-val').innerHTML=byV.slice(0,8).map(x=>`<div class="prod-bar-row"><div class="prod-bar-name">${esc(x.prod.name)}</div><div class="prod-bar-bg"><div class="prod-bar-fill" style="width:${Math.round(x.value/maxV*100)}%;background:var(--amber)"></div></div><div class="prod-bar-val">${fmtMoney(x.value)}</div></div>`).join('');
+  const tbody=document.getElementById('pr-sp-rows');if(!tbody)return;tbody.innerHTML='';
+  SALESPERSONS.forEach(sp=>{
+    const sv=filtered.filter(v=>v.spId===sp.id);const sm={};
+    sv.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!sm[i.prodId])sm[i.prodId]={prod:p,qty:0,value:0,orders:0};sm[i.prodId].qty+=i.qty;sm[i.prodId].value+=p.mrp*i.qty;sm[i.prodId].orders++;});});
+    const sl=Object.values(sm).sort((a,b)=>b.qty-a.qty);
+    if(!sl.length){const tr=document.createElement('tr');tr.innerHTML=`<td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td colspan="5" style="color:var(--text3);font-size:12px">No orders in period</td>`;tbody.appendChild(tr);}
+    else sl.forEach((x,idx)=>{const tr=document.createElement('tr');tr.innerHTML=`${idx===0?`<td rowspan="${sl.length}"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>`:''}
+      <td>${esc(x.prod.name)}</td><td><span class="badge badge-state" style="font-size:10px">${esc(x.prod.category)}</span></td><td style="text-align:center;font-weight:500">${x.qty} ${esc(x.prod.unit)}</td><td class="price-tag">${fmtMoney(x.value)}</td><td style="text-align:center">${x.orders}</td>`;tbody.appendChild(tr);});
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — INACTIVE PARTIES
+   ════════════════════════════════════════════════════════════ */
+function renderInactive(){
+  const ro=getReorderParties().length;
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">Inactive Parties ${ro>0?`<span class="reorder-badge" style="font-size:12px;padding:3px 10px">⟳ ${ro} reorder due</span>`:''}</div></div>
+      <div class="filter-row">
+        <select class="filter-select" id="inact-sp" onchange="refreshInactive()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="inact-state" onchange="refreshInactive()"><option value="all">All states</option>${[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort().map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow);flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:600">Flag parties not visited in</span>
+      <span style="font-size:20px;font-weight:600;color:var(--accent);min-width:36px;text-align:center" id="days-lbl">45</span>
+      <span style="font-size:13px;color:var(--text2)">days</span>
+      <input type="range" min="7" max="180" value="45" step="1" id="days-slider" oninput="document.getElementById('days-lbl').textContent=this.value;refreshInactive()" style="flex:1;min-width:120px">
+    </div>
+    <div id="inactive-list"></div>
+  </div>`);
+  refreshInactive();
+}
+function refreshInactive(){
+  const days=parseInt(document.getElementById('days-slider')?.value)||45;
+  const spF=document.getElementById('inact-sp')?.value||'all';const stF=document.getElementById('inact-state')?.value||'all';
+  const cut=new Date();cut.setDate(cut.getDate()-days);const cutStr=cut.toISOString().slice(0,10);
+  const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
+  let parties=PARTIES.filter(p=>{
+    if(spF!=='all'&&p.spId!==spF)return false;if(stF!=='all'&&p.state!==stF)return false;
+    const lv=lvMap[p.id];return!lv||lv<=cutStr;
+  }).map(p=>{const lv=lvMap[p.id];return{...p,lastVisit:lv,daysSince:lv?daysBetween(lv,today()):null};})
+  .sort((a,b)=>{if(a.daysSince===null&&b.daysSince===null)return 0;if(a.daysSince===null)return-1;if(b.daysSince===null)return 1;return b.daysSince-a.daysSince;});
+  const list=document.getElementById('inactive-list');if(!list)return;
+  if(!parties.length){list.innerHTML=`<div style="background:var(--accent-light);border-radius:var(--r-lg);padding:24px;text-align:center;color:var(--accent);font-size:13px;font-weight:500">All parties visited in the last ${days} days!</div>`;return}
+  list.innerHTML=parties.map(p=>{
+    const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;
+    const isCrit=p.daysSince===null||p.daysSince>days*2;const isWarn=!isCrit&&p.daysSince>days;
+    const dLabel=p.daysSince===null?'Never visited':`${p.daysSince} days ago`;
+    const bClass=isCrit?'days-critical':isWarn?'days-warning':'days-ok';
+    return`<div class="inactive-card${isCrit?' critical':isWarn?' warning':''}">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder due</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2)">${esc(p.city||'')}, ${esc(p.state)}</div>
+        <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;font-size:11px">
+          <div class="person-cell" style="gap:5px"><div class="av" style="width:18px;height:18px;background:${sp.bg};color:${sp.color};font-size:8px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div>
+          ${p.outstanding>0?`<span style="color:var(--red);font-weight:500">⚠ Due: ${fmtMoney(p.outstanding)}</span>`:''}
+          ${p.phone?`<span style="color:var(--text2)">📞 ${esc(p.phone)}</span>`:''}
+        </div>
+        ${p.lastVisit?`<div style="font-size:10px;color:var(--text3);margin-top:4px">Last visit: ${fmtDate(p.lastVisit)}</div>`:''}
+      </div>
+      <span class="days-badge ${bClass}">${dLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — PAYMENTS
+   ════════════════════════════════════════════════════════════ */
+function renderPaymentReport(){
+  const now=new Date();
+  const fromDef=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString().slice(0,10);
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar"><div><div class="admin-title">Payment Collections</div></div>
+      <div class="filter-row">
+        <input type="date" class="filter-select" id="pay-from" value="${fromDef}" onchange="refreshPayments()">
+        <span style="font-size:13px;color:var(--text2)">to</span>
+        <input type="date" class="filter-select" id="pay-to" value="${today()}" onchange="refreshPayments()">
+        <select class="filter-select" id="pay-sp" onchange="refreshPayments()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="pay-mode" onchange="refreshPayments()"><option value="all">All modes</option><option>Cheque</option><option>NEFT / Bank Transfer</option><option>UPI</option><option>Adjustment</option></select>
+      </div>
+    </div>
+    <div class="metrics-row" id="pay-metrics"></div>
+    <div class="card"><div class="card-header">All collections</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Date</th><th>SP</th><th>Party</th><th>Mode</th><th>Amount</th><th>Ref</th><th>Notes</th></tr></thead><tbody id="pay-rows"></tbody></table></div></div>
+  </div>`);
+  refreshPayments();
+}
+function refreshPayments(){
+  const from=document.getElementById('pay-from')?.value;const to=document.getElementById('pay-to')?.value;
+  const spF=document.getElementById('pay-sp')?.value||'all';const modeF=document.getElementById('pay-mode')?.value||'all';
+  if(!from||!to)return;
+  let pays=visitsArr().filter(v=>v.payment&&v.date>=from&&v.date<=to).map(v=>({...v.payment,date:v.date,spId:v.spId,partyId:v.partyId}));
+  if(spF!=='all')pays=pays.filter(p=>p.spId===spF);if(modeF!=='all')pays=pays.filter(p=>p.mode===modeF);
+  const total=pays.reduce((s,p)=>s+(p.amount||0),0);const byMode={};pays.forEach(p=>{byMode[p.mode]=(byMode[p.mode]||0)+p.amount});
+  const mc=(num,lbl,color='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${color}">${num}</div><div class="metric-lbl">${lbl}</div></div>`;
+  document.getElementById('pay-metrics').innerHTML=mc(pays.length,'Collections')+mc(fmtMoney(total),'Total collected','var(--teal)')+mc(fmtMoney(byMode['Cheque']||0),'Cheque')+mc(fmtMoney((byMode['UPI']||0)+(byMode['NEFT / Bank Transfer']||0)),'UPI + NEFT');
+  const mc2={Cheque:'var(--blue)',UPI:'var(--accent)','NEFT / Bank Transfer':'var(--teal)',Adjustment:'var(--amber)'};
+  document.getElementById('pay-rows').innerHTML=pays.sort((a,b)=>b.date.localeCompare(a.date)).map(p=>{
+    const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;const party=PARTIES.find(x=>x.id===p.partyId)||{name:'?'};
+    return`<tr><td class="time-mono">${fmtDate(p.date)}</td><td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td style="font-weight:500">${esc(party.name)}</td><td><span style="font-size:11px;font-weight:600;color:${mc2[p.mode]||'var(--text2)'}">${esc(p.mode)}</span></td><td class="price-tag">${fmtMoney(p.amount)}</td><td class="time-mono">${esc(p.ref||'—')}</td><td style="font-size:11px;color:var(--text2)">${esc(p.notes||'—')}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">No payments in this period</td></tr>';
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — PARTIES
+   ════════════════════════════════════════════════════════════ */
+function renderParties(){
+  const states=[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort();
+  const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">Party Master</div><div class="admin-sub">${PARTIES.length} parties total</div></div>
+      <div class="filter-row">
+        <select class="filter-select" id="pt-state" onchange="refreshParties()"><option value="all">All states</option>${states.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+        <select class="filter-select" id="pt-sp" onchange="refreshParties()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <button class="btn btn-green" onclick="openPartyModal()">+ Add party</button>
+      </div>
+    </div>
+    <input class="search-bar" id="pt-search" placeholder="Search party name, contact, city..." oninput="refreshParties()">
+    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Party name</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
+  </div>`);
+  refreshParties();
+}
+function refreshParties(){
+  const stF=document.getElementById('pt-state')?.value||'all';const spF=document.getElementById('pt-sp')?.value||'all';
+  const q=(document.getElementById('pt-search')?.value||'').toLowerCase();
+  const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
+  let f=PARTIES.filter(p=>{
+    if(stF!=='all'&&p.state!==stF)return false;if(spF!=='all'&&p.spId!==spF)return false;
+    if(q&&!p.name.toLowerCase().includes(q)&&!(p.contact||'').toLowerCase().includes(q)&&!(p.city||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  document.getElementById('pt-rows').innerHTML=f.map(p=>{
+    const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;const isNew=!lvMap[p.id];
+    return`<tr>
+      <td style="font-weight:600">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder</span>':''}</td>
+      <td>${esc(p.contact||'—')}</td><td class="time-mono">${esc(p.phone||'—')}</td><td>${esc(p.city||'—')}</td>
+      <td><span class="badge badge-state" style="font-size:10px">${esc(p.state)}</span></td>
+      <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
+      <td>${isNew?'<span class="badge badge-new" style="font-size:10px">New</span>':'<span class="badge" style="font-size:10px;background:var(--surface2);color:var(--text2)">Existing</span>'}</td>
+      <td><span class="${p.outstanding>0?'outstanding-due':'outstanding-ok'}">${p.outstanding>0?fmtMoney(p.outstanding):'Clear'}</span></td>
+      <td class="time-mono">${fmtDate(p.lastOrder)}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="icon-btn" onclick="openPartyDrawer('${p.id}')">History</button>
+        <button class="icon-btn" onclick="openPartyModal('${p.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteParty('${p.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
+}
+function openPartyModal(editId){
+  if(!SALESPERSONS.length){showToast('Add salespersons first');return}
+  const pmSp=document.getElementById('pm-sp');pmSp.innerHTML='';
+  SALESPERSONS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;pmSp.appendChild(o);});
+  document.getElementById('pm-title').textContent=editId?'Edit party':'Add party';
+  document.getElementById('pm-edit-id').value=editId||'';
+  if(editId){const p=PARTIES.find(x=>x.id===editId);if(!p)return;document.getElementById('pm-name').value=p.name;document.getElementById('pm-contact').value=p.contact||'';document.getElementById('pm-phone').value=p.phone||'';document.getElementById('pm-city').value=p.city||'';document.getElementById('pm-state').value=p.state||'';pmSp.value=p.spId||'';document.getElementById('pm-outstanding').value=p.outstanding||0;document.getElementById('pm-lastorder').value=p.lastOrder||'';}
+  else{['pm-name','pm-contact','pm-phone','pm-city','pm-outstanding','pm-lastorder'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-state').value='';pmSp.value=SALESPERSONS[0]?.id||'';}
+  openModal('party-modal');
+}
+async function submitParty(){
+  const name=document.getElementById('pm-name').value.trim();const state=document.getElementById('pm-state').value;const spId=document.getElementById('pm-sp').value;
+  if(!name||!state||!spId){showToast('Name, state and SP required');return}
+  const editId=document.getElementById('pm-edit-id').value;
+  const data={name,contact:document.getElementById('pm-contact').value.trim(),phone:document.getElementById('pm-phone').value.trim(),city:document.getElementById('pm-city').value.trim(),state,spId,outstanding:parseFloat(document.getElementById('pm-outstanding').value)||0,lastOrder:document.getElementById('pm-lastorder').value};
+  setSyncStatus('wait','Saving...');
+  if(editId) await UPDATE(REF('parties/'+editId),data);
+  else{const id=uid();data.id=id;await SET(REF('parties/'+id),data);}
+  setSyncStatus('ok','Live');closeModal('party-modal');showToast(editId?'Party updated':'Party added');
+}
+async function deleteParty(id){if(!confirm('Delete this party?'))return;await REMOVE(REF('parties/'+id));showToast('Party deleted');}
+
+function openPartyDrawer(partyId){
+  const party=PARTIES.find(p=>p.id===partyId);if(!party)return;
+  const sp=SALESPERSONS.find(s=>s.id===party.spId)||FALLBACK_SP;
+  document.getElementById('drawer-name').textContent=party.name;
+  document.getElementById('drawer-sub').textContent=`${party.city?party.city+', ':''}${party.state} · ${sp.name.split(' ')[0]}`;
+  const pv=visitsArr().filter(v=>v.partyId===partyId);
+  const ords=pv.filter(v=>v.status==='order');const totOV=ords.reduce((s,v)=>s+orderValue(v),0);const totPaid=pv.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
+  const tag=(v,l,c='var(--text2)')=>`<span style="background:var(--surface2);border-radius:6px;padding:5px 10px;font-size:12px"><span style="color:${c};font-weight:600">${v}</span> <span style="color:var(--text2)">${l}</span></span>`;
+  document.getElementById('drawer-stats').innerHTML=tag(pv.filter(v=>['order','noorder'].includes(v.status)).length,'visits')+tag(ords.length,'orders','var(--accent)')+tag(fmtMoney(totOV),'order value','var(--accent)')+tag(fmtMoney(totPaid),'collected','var(--teal)')+tag(party.outstanding>0?fmtMoney(party.outstanding):'Clear','outstanding',party.outstanding>0?'var(--red)':'var(--accent)');
+  const outEl=document.getElementById('drawer-outstanding');
+  if(party.outstanding>0){outEl.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Outstanding</div><div style="font-size:20px;font-weight:600;color:var(--red)">${fmtMoney(party.outstanding)}</div>`;outEl.style.display='block';}
+  else outEl.style.display='none';
+  const sorted=[...pv].sort((a,b)=>b.date.localeCompare(a.date));
+  const dotC={order:'#1A5C3A',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990',active:'#378ADD'};
+  document.getElementById('drawer-history').innerHTML=!sorted.length?'<div style="padding:8px 0;font-size:12px;color:var(--text2)">No visits recorded yet.</div>':sorted.map(v=>{
+    const ov=orderValue(v);
+    return`<div class="history-row">
+      <div class="history-dot" style="background:${dotC[v.status]||'#999'}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">${fmtDate(v.date)} <span class="badge badge-${v.status==='order'?'order':v.status==='noorder'?'noorder':'planned'}" style="font-size:10px;padding:2px 6px">${v.status}</span></div>
+        ${v.checkIn&&v.checkOut?`<div style="font-size:11px;color:var(--text2)">${fmtTime(v.checkIn)} – ${fmtTime(v.checkOut)}${dur(v.checkIn,v.checkOut)?' · '+dur(v.checkIn,v.checkOut):''}</div>`:''}
+        ${ov>0?`<div style="font-size:12px;font-weight:500;color:var(--accent)">${fmtMoney(ov)}</div>`:''}
+        ${v.feedback?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(v.feedback)}</div>`:''}
+        ${v.payment?`<div style="font-size:11px;color:var(--teal);margin-top:2px">Paid ${fmtMoney(v.payment.amount)} via ${esc(v.payment.mode)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('party-drawer').classList.add('open');
+}
+function closeDrawer(){document.getElementById('party-drawer').classList.remove('open');}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — PRICELIST
+   ════════════════════════════════════════════════════════════ */
+function renderPricelist(){
+  const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))].sort();
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">Product Master & Pricelist</div><div class="admin-sub">${PRODUCTS.length} products</div></div>
+      <div class="filter-row">
+        <select class="filter-select" id="pl-cat" onchange="refreshPricelist()"><option value="all">All categories</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+        <button class="btn btn-green" onclick="openProductModal()">+ Add product</button>
+      </div>
+    </div>
+    <input class="search-bar" id="pl-search" placeholder="Search product name or code..." oninput="refreshPricelist()">
+    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>MRP</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
+  </div>`);
+  refreshPricelist();
+}
+function refreshPricelist(){
+  const catF=document.getElementById('pl-cat')?.value||'all';const q=(document.getElementById('pl-search')?.value||'').toLowerCase();
+  let f=PRODUCTS.filter(p=>{if(catF!=='all'&&p.category!==catF)return false;if(q&&!p.name.toLowerCase().includes(q)&&!p.code.toLowerCase().includes(q))return false;return true;});
+  document.getElementById('pl-rows').innerHTML=f.map(p=>`<tr>
+    <td style="font-family:var(--mono);font-size:12px">${esc(p.code)}</td>
+    <td style="font-weight:600">${esc(p.name)}</td>
+    <td><span class="badge badge-state" style="font-size:10px">${esc(p.category)}</span></td>
+    <td>${esc(p.unit)}</td>
+    <td>${p.sizes?p.sizes.split(',').map(s=>`<span class="size-badge">${esc(s.trim())}</span>`).join(''):'—'}</td>
+    <td class="price-tag">${fmtMoney(p.mrp)}</td>
+    <td style="display:flex;gap:4px"><button class="icon-btn" onclick="openProductModal('${p.id}')">Edit</button><button class="icon-btn danger" onclick="deleteProduct('${p.id}')">Del</button></td>
+  </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">No products yet. Add products above.</td></tr>';
+}
+function openProductModal(editId){
+  document.getElementById('prod-modal-title').textContent=editId?'Edit product':'Add product';document.getElementById('prod-edit-id').value=editId||'';
+  if(editId){const p=PRODUCTS.find(x=>x.id===editId);if(!p)return;document.getElementById('prod-code').value=p.code;document.getElementById('prod-name').value=p.name;document.getElementById('prod-cat').value=p.category;document.getElementById('prod-unit').value=p.unit;document.getElementById('prod-mrp').value=p.mrp;document.getElementById('prod-sizes').value=p.sizes||'';}
+  else{['prod-code','prod-name','prod-mrp','prod-sizes'].forEach(id=>document.getElementById(id).value='');document.getElementById('prod-cat').value='';document.getElementById('prod-unit').value='Piece';}
+  openModal('product-modal');
+}
+async function submitProduct(){
+  const code=document.getElementById('prod-code').value.trim();const name=document.getElementById('prod-name').value.trim();const mrp=parseFloat(document.getElementById('prod-mrp').value)||0;const category=document.getElementById('prod-cat').value;
+  if(!code||!name||!category||!mrp){showToast('Code, name, category and MRP required');return}
+  const editId=document.getElementById('prod-edit-id').value;
+  const data={code,name,category,unit:document.getElementById('prod-unit').value,mrp,sizes:document.getElementById('prod-sizes').value.trim()};
+  setSyncStatus('wait','Saving...');
+  if(editId) await UPDATE(REF('products/'+editId),data);
+  else{const id=uid();data.id=id;await SET(REF('products/'+id),data);}
+  setSyncStatus('ok','Live');closeModal('product-modal');showToast(editId?'Product updated':'Product added');
+}
+async function deleteProduct(id){if(!confirm('Delete this product?'))return;await REMOVE(REF('products/'+id));showToast('Deleted');}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — SETTINGS
+   ════════════════════════════════════════════════════════════ */
+function renderSettingsView(){
+  setViewHTML(`<div class="section-shell" style="max-width:660px">
+    <div class="admin-topbar" style="margin-bottom:16px"><div><div class="admin-title">Settings</div></div></div>
+
+    <!-- Salespersons -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Salespersons</div>
+      <div id="sp-list-wrap">${buildSPListHTML()}</div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+        <input type="text" class="form-input" id="new-sp-name" placeholder="Full name e.g. Raunak Shah" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')openAddSPModal()">
+        <button class="btn btn-green" onclick="openAddSPModal()">Add SP</button>
+      </div>
+    </div>
+
+    <!-- Admin password -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Admin password</div>
+      <div style="padding:14px 16px;font-size:13px;color:var(--text2)">Change the admin login password. Note: permanently updating requires editing ADMIN_PASSWORD in the HTML file.</div>
+      <div style="padding:0 16px 14px"><button class="btn btn-outline" onclick="openModal('pwd-modal')">Change password</button></div>
+    </div>
+
+    <!-- FY Rollover -->
+    <div class="fy-card">
+      <div class="card-header" style="background:var(--teal-light)">
+        <span style="color:var(--teal);font-weight:600">Financial Year Rollover</span>
+        <span style="font-size:11px;font-weight:400;color:var(--teal)" id="fy-label">${getCurrentFY().label}</span>
+      </div>
+      <div style="padding:16px">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.7">Closes current FY, archives all visits, keeps parties/products/SPs intact.</div>
+        <div style="background:var(--surface);border-radius:var(--r);padding:12px;margin-bottom:12px" id="fy-summary-wrap">${buildFYSummaryHTML()}</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:12px"><input type="checkbox" id="fy-reset-out" style="width:16px;height:16px"> Reset all outstanding balances to ₹0</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-teal" onclick="exportFYArchive()">Export FY archive</button>
+          <button class="btn btn-teal" onclick="startNewFY()">Start new FY →</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)">Always export the archive first. Cannot be undone.</div>
+      </div>
+    </div>
+
+    <!-- Data -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-header">Data & backup</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;color:var(--text2)">All data is stored in Firebase. It is always safe — replacing the HTML file never affects your data.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="exportAllData()">Export all data (JSON)</button>
+        </div>
+      </div>
+    </div>
+  </div>`);
+}
+
+function buildSPListHTML(){
+  if(!SALESPERSONS.length)return'<div style="padding:16px;font-size:13px;color:var(--text2)">No salespersons added yet.</div>';
+  return SALESPERSONS.map(sp=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+    <div class="av" style="width:36px;height:36px;background:${sp.bg};color:${sp.color};font-size:13px">${esc(sp.initials)}</div>
+    <div style="flex:1"><div style="font-weight:500">${esc(sp.name)}</div><div style="font-size:11px;color:var(--text2)">${PARTIES.filter(p=>p.spId===sp.id).length} parties · PIN set</div></div>
+    <button class="icon-btn" onclick="openEditSPModal('${sp.id}')">Edit</button>
+    <button class="icon-btn danger" onclick="deleteSP('${sp.id}')">Remove</button>
+  </div>`).join('');
+}
+
+function buildFYSummaryHTML(){
+  const fy=getCurrentFY();const va=visitsArr().filter(v=>v.date>=fy.from&&v.date<=fy.to);
+  const ords=va.filter(v=>v.status==='order');const totOV=ords.reduce((s,v)=>s+orderValue(v),0);const pays=va.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
+  const mc=(n,l)=>`<div style="text-align:center"><div style="font-size:18px;font-weight:600">${n}</div><div style="font-size:10px;color:var(--text2);margin-top:2px">${l}</div></div>`;
+  return`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${mc(va.length,'Visits')}${mc(ords.length,'Orders')}${mc(fmtMoney(totOV),'Order value')}</div>`;
+}
+
+function getCurrentFY(){const now=new Date();const y=now.getFullYear();const m=now.getMonth();const s=m>=3?y:y-1;return{label:`FY ${s}-${String(s+1).slice(2)}`,from:`${s}-04-01`,to:`${s+1}-03-31`,startYear:s};}
+
+async function exportFYArchive(){
+  const fy=getCurrentFY();const fyV=visitsArr().filter(v=>v.date>=fy.from&&v.date<=fy.to);
+  const archive={company:'Craze Hosiery Pvt. Ltd.',financialYear:fy.label,exportedOn:new Date().toISOString(),salespersons:SALESPERSONS,parties:PARTIES,products:PRODUCTS,visits:fyV};
+  const blob=new Blob([JSON.stringify(archive,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`craze-${fy.label.replace(/\s/g,'-')}-archive.json`;a.click();
+  showToast('Archive exported!');
+}
+
+async function startNewFY(){
+  const fy=getCurrentFY();const fyV=visitsArr().filter(v=>v.date>=fy.from&&v.date<=fy.to);
+  if(!confirm(`Close ${fy.label} and start new FY?\n\nThis will delete ${fyV.length} visits from Firebase permanently.\nMake sure you have exported the archive first.`))return;
+  setSyncStatus('wait','Processing...');
+  const dels={};fyV.forEach(v=>{dels['visits/'+v.id]=null;});
+  if(Object.keys(dels).length)await UPDATE(REF('/'),dels);
+  if(document.getElementById('fy-reset-out')?.checked){
+    const pUpd={};PARTIES.forEach(p=>{if(p.outstanding>0)pUpd['parties/'+p.id+'/outstanding']=0;});
+    if(Object.keys(pUpd).length)await UPDATE(REF('/'),pUpd);
+  }
+  setSyncStatus('ok','Live');showToast(`${fy.label} closed · New FY started!`);renderSettingsView();
+}
+
+function exportAllData(){
+  const data={salespersons:SALESPERSONS,parties:PARTIES,products:PRODUCTS,visits:visitsArr(),tours:toursArr(),targets:TARGETS,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`craze-data-${today()}.json`;a.click();
+}
+
+function openAddSPModal(){openSPModal(null);}
+function openEditSPModal(id){openSPModal(id);}
+function openSPModal(editId){
+  document.getElementById('sp-modal-title').textContent=editId?'Edit salesperson':'Add salesperson';
+  document.getElementById('sp-edit-id').value=editId||'';
+  if(editId){const sp=SALESPERSONS.find(s=>s.id===editId);if(!sp)return;document.getElementById('sp-name').value=sp.name;['sp-p1','sp-p2','sp-p3','sp-p4'].forEach(id=>document.getElementById(id).value='');}
+  else{document.getElementById('sp-name').value='';['sp-p1','sp-p2','sp-p3','sp-p4'].forEach(id=>document.getElementById(id).value='');}
+  openModal('sp-modal');
+}
+async function submitSP(){
+  const name=document.getElementById('sp-name').value.trim();if(!name){showToast('Enter name');return}
+  const pin=['sp-p1','sp-p2','sp-p3','sp-p4'].map(id=>document.getElementById(id).value).join('');
+  const editId=document.getElementById('sp-edit-id').value;
+  if(!editId&&pin.length<4){showToast('Enter a 4-digit PIN');return}
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||name.slice(0,2).toUpperCase();
+  const colorPick=SP_COLORS[SALESPERSONS.length%SP_COLORS.length];
+  const data={name,initials,...colorPick};
+  if(pin.length===4)data.pin=pin;
+  setSyncStatus('wait','Saving...');
+  if(editId) await UPDATE(REF('salespersons/'+editId),data);
+  else{const id=uid();data.id=id;await SET(REF('salespersons/'+id),data);}
+  setSyncStatus('ok','Live');closeModal('sp-modal');showToast(editId?'Salesperson updated':'Salesperson added');
+}
+async function deleteSP(id){if(!confirm('Remove this salesperson?'))return;await REMOVE(REF('salespersons/'+id));showToast('Removed');}
+
+function changePassword(){
+  const cur=document.getElementById('pwd-current').value;const nw=document.getElementById('pwd-new').value;const conf=document.getElementById('pwd-confirm').value;
+  if(cur!==ADMIN_PWD){showToast('Current password incorrect');return}if(nw!==conf){showToast('New passwords do not match');return}if(nw.length<4){showToast('Password must be at least 4 characters');return}
+  ADMIN_PWD=nw;closeModal('pwd-modal');showToast('Password changed for this session. Update ADMIN_PASSWORD in the HTML file to make it permanent.');
+}
+
+/* ════════════════════════════════════════════════════════════
+   WHATSAPP SUMMARY (SP)
+   ════════════════════════════════════════════════════════════ */
+function openWASummary(){
+  if(!currentSP)return;
+  const myV=visitsArr().filter(v=>v.spId===currentSP.id&&v.date===today());
+  const ords=myV.filter(v=>v.status==='order');const pays=myV.filter(v=>v.payment);
+  const totOV=ords.reduce((s,v)=>s+orderValue(v),0);const totPay=pays.reduce((s,v)=>s+v.payment.amount,0);
+  const d=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const lines=[`*Craze Hosiery Pvt. Ltd.*`,`*Daily Report — ${currentSP.name.split(' ')[0]}*`,`📅 ${d}`,``,`*Visits Summary*`,`Planned: ${myV.length}`,`Completed: ${myV.filter(v=>['order','noorder'].includes(v.status)).length}`];
+  if(ords.length)lines.push(`✅ Orders: ${ords.length}`);
+  if(myV.filter(v=>v.status==='noorder').length)lines.push(`❌ No order: ${myV.filter(v=>v.status==='noorder').length}`);
+  if(myV.filter(v=>v.status==='rescheduled').length)lines.push(`🔄 Rescheduled: ${myV.filter(v=>v.status==='rescheduled').length}`);
+  if(ords.length){lines.push('',`*Orders Received*`);ords.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${fmtMoney(orderValue(v))}`);});lines.push(`*Total: ${fmtMoney(totOV)}*`);}
+  if(pays.length){lines.push('',`*Payments Collected*`);pays.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${fmtMoney(v.payment.amount)} (${v.payment.mode})`);});lines.push(`*Total: ${fmtMoney(totPay)}*`);}
+  const fb=myV.filter(v=>v.feedback&&v.feedback.trim()&&['order','noorder'].includes(v.status));
+  if(fb.length){lines.push('',`*Feedback*`);fb.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${v.feedback}${v.nextVisit?' (Next: '+fmtDate(v.nextVisit)+')':''}`);});}
+  lines.push('',`_Sent via Craze Hosiery Visit Tracker_`);
+  document.getElementById('wa-text').textContent=lines.join('\n');
+  document.getElementById('wa-sub').textContent=d+' · '+currentSP.name;
+  openModal('wa-modal');
+}
+function copyWA(){
+  const text=document.getElementById('wa-text').textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>showToast('Copied! Paste in WhatsApp')).catch(()=>fbCopy(text));}
+  else fbCopy(text);
+}
+function fbCopy(text){const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Copied! Paste in WhatsApp');}
+
+/* ── modal close on backdrop tap ── */
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+
+/* ═══════════════════════════════════════════════════════════
+   PWA — Service Worker registration + install prompt + offline
+   ═══════════════════════════════════════════════════════════ */
+let _deferredInstallPrompt = null;
+let _swRegistration = null;
+
+/* Register service worker */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      _swRegistration = reg;
+      /* Check for updates every 60 seconds */
+      setInterval(() => reg.update(), 60000);
+      /* New SW waiting → show update banner */
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if(newSW.state === 'installed' && navigator.serviceWorker.controller){
+            document.getElementById('update-banner').style.display = 'block';
+          }
+        });
+      });
+    }).catch(err => console.log('SW registration failed:', err));
+    /* Reload after SW activates */
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+  });
+}
+
+/* Capture install prompt */
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  /* Show banner unless user dismissed before */
+  if(!localStorage.getItem('craze_install_dismissed')){
+    const banner = document.getElementById('install-banner');
+    banner.style.display = 'flex';
+    /* Push login card up a bit on small screens */
+    document.querySelector('.login-card')?.style && (document.querySelector('.login-card').style.marginBottom='70px');
+  }
+});
+
+function doInstall(){
+  if(!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(choice => {
+    if(choice.outcome === 'accepted') showToast('App installed! Open from home screen anytime.');
+    _deferredInstallPrompt = null;
+    document.getElementById('install-banner').style.display = 'none';
+  });
+}
+
+function dismissInstall(){
+  document.getElementById('install-banner').style.display = 'none';
+  localStorage.setItem('craze_install_dismissed', '1');
+}
+
+function doUpdate(){
+  if(_swRegistration && _swRegistration.waiting){
+    _swRegistration.waiting.postMessage('skipWaiting');
+  }
+  document.getElementById('update-banner').style.display = 'none';
+}
+
+/* Online / offline detection */
+function updateOnlineStatus(){
+  const offline = !navigator.onLine;
+  const banner = document.getElementById('offline-banner');
+  if(banner) banner.style.display = offline ? 'block' : 'none';
+  /* Push nav down when offline banner is showing */
+  const nav = document.getElementById('main-nav');
+  if(nav) nav.style.top = offline ? '40px' : '0';
+  /* Update sync dot */
+  if(offline){
+    setSyncStatus('err', 'Offline');
+  } else if(window._FB_READY){
+    setSyncStatus('ok', 'Live');
+  }
+}
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus(); /* run on load */
+
+/* iOS Safari install hint — show once */
+function showiOSHint(){
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isInStandaloneMode = window.navigator.standalone;
+  if(isIOS && !isInStandaloneMode && !localStorage.getItem('craze_ios_hint')){
+    setTimeout(() => {
+      showToast('📲 To install: tap Share → Add to Home Screen');
+      localStorage.setItem('craze_ios_hint', '1');
+    }, 3000);
+  }
+}
+showiOSHint();
+
+/* App installed event */
+window.addEventListener('appinstalled', () => {
+  showToast('Craze Hosiery installed successfully!');
+  document.getElementById('install-banner').style.display = 'none';
+});
+</script>
+</body>
+</html>
