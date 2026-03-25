@@ -589,7 +589,7 @@ input,textarea,select{font-family:var(--font)}
 <div class="modal">
   <div class="modal-handle"></div>
   <div class="modal-title" id="sp-modal-title">Add salesperson</div>
-  <label class="form-label">Full name *</label><input type="text" class="form-input" id="sp-name" placeholder="e.g. Raunak Shah">
+  <label class="form-label">Full name *</label><input type="text" class="form-input" id="sp-name" placeholder="Full name">
   <label class="form-label">4-digit PIN *</label>
   <div class="pin-row" style="margin-bottom:14px">
     <input class="pin-digit" type="password" maxlength="1" inputmode="numeric" id="sp-p1" oninput="pinNext(this,'sp-p2')">
@@ -2098,7 +2098,7 @@ function renderSettingsView(){
       <div class="card-header">Salespersons</div>
       <div id="sp-list-wrap">${buildSPListHTML()}</div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
-        <input type="text" class="form-input" id="new-sp-name" placeholder="Full name e.g. Raunak Shah" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')openAddSPModal()">
+        <input type="text" class="form-input" id="new-sp-name" placeholder="Full name" style="margin:0;flex:1" onkeydown="if(event.key==='Enter')openAddSPModal()">
         <button class="btn btn-green" onclick="openAddSPModal()">Add SP</button>
       </div>
     </div>
