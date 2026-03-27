@@ -547,7 +547,14 @@ input,textarea,select{font-family:var(--font)}
     <div><label class="form-label">Assigned SP *</label><select class="form-input" id="pm-sp"></select></div>
     <div><label class="form-label">Outstanding (₹)</label><input type="number" class="form-input" id="pm-outstanding" min="0" placeholder="0"></div>
   </div>
-  <label class="form-label">Last order date</label><input type="date" class="form-input" id="pm-lastorder">
+  <div class="form-row">
+    <div><label class="form-label">Grade</label>
+      <select class="form-input" id="pm-grade">
+        <option value="">No grade</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
+      </select>
+    </div>
+    <div><label class="form-label">Last order date</label><input type="date" class="form-input" id="pm-lastorder"></div>
+  </div>
   <button class="btn btn-green btn-full" onclick="submitParty()">Save party</button>
   <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('party-modal')">Cancel</button>
   <input type="hidden" id="pm-edit-id">
@@ -741,7 +748,7 @@ let currentSP=null;   // {id, name, initials, color, bg}
 let _listeners=[];
 
 /* ── IN-MEMORY CACHE (synced from Firebase) ── */
-let SALESPERSONS=[], PARTIES=[], PRODUCTS=[], VISITS={}, TOURS={}, TARGETS={};
+let SALESPERSONS=[], PARTIES=[], PRODUCTS=[], VISITS={}, TOURS={}, TARGETS={}, PRICELISTS={};
 
 const SP_COLORS=[
   {color:'#1A5C3A',bg:'#E8F5EE'},{color:'#4A3580',bg:'#F0EEFB'},
@@ -765,11 +772,17 @@ const openModal=id=>document.getElementById(id).classList.add('open');
 const showToast=msg=>{const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1814;color:white;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;white-space:nowrap;max-width:90vw;text-align:center';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2500)};
 
 function orderValue(v){
-  return(v.orderItems||[]).reduce((s,i)=>{const p=PRODUCTS.find(x=>x.id===i.prodId);return s+(p?p.price*i.qty:0)},0);
+  return(v.orderItems||[]).reduce((s,i)=>{
+    const price=getProductPrice(i.prodId,v.pricelistId||'');
+    return s+price*i.qty;
+  },0);
 }
 function visitsArr(){return Object.values(VISITS);}
 function toursArr(){return Object.values(TOURS);}
 function isNewClient(partyId,visitDate){
+  const party=PARTIES.find(p=>p.id===partyId);
+  if(party&&party.source==='csv') return false; // CSV-uploaded = existing
+  if(party&&party.source==='app') return true;  // App-added = new
   return!visitsArr().some(v=>v.partyId===partyId&&v.date<visitDate&&['order','noorder'].includes(v.status));
 }
 function buildLastVisitMap(){
@@ -953,6 +966,7 @@ function subscribeData(){
   sub('visits',d=>{VISITS=d;check();refreshAll();});
   sub('tours',d=>{TOURS=d||{};refreshAll();});
   sub('targets',d=>{TARGETS=d||{};refreshAll();});
+  sub('pricelists',d=>{PRICELISTS=d||{};refreshAll();});
 }
 
 let _afterLoaded=false;
@@ -1067,9 +1081,11 @@ function renderMobileView(){
 }
 
 function buildVisitCardHTML(v){
-  const party=PARTIES.find(p=>p.id===v.partyId)||{name:'Unknown',city:'',phone:'',outstanding:0};
+  const party=PARTIES.find(p=>p.id===v.partyId)||{name:'Unknown',city:'',phone:'',outstanding:0,grade:''};
   const isNew=isNewClient(v.partyId,v.date);
   const ov=orderValue(v);
+  const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
+  const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
   const bm={planned:'badge-planned',active:'badge-active',order:'badge-order',noorder:'badge-noorder',rescheduled:'badge-resched',feedback:'badge-feedback'};
 
   let meta='';
@@ -1104,7 +1120,7 @@ function buildVisitCardHTML(v){
   return`<div class="visit-card${v.status==='active'?' active-visit':''}">
     <div class="visit-card-top">
       <div style="flex:1;min-width:0">
-        <div class="visit-name">${esc(party.name)}${isNew?' <span class="badge badge-new" style="font-size:10px;padding:1px 6px">New</span>':''}</div>
+        <div class="visit-name">${esc(party.name)}${party.grade?` <span class="badge" style="background:${gradeBg[party.grade]||'var(--surface2)'};color:${gradeColors[party.grade]||'var(--text2)'};font-size:9px;padding:1px 6px;font-weight:600">${esc(party.grade)}</span>`:''}${isNew?' <span class="badge badge-new" style="font-size:10px;padding:1px 6px">New</span>':''}</div>
         <div class="visit-meta">${meta}</div>
         ${ov>0?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Order: <span style="font-weight:500;color:var(--accent)">${fmtMoney(ov)}</span>${payInfo}</div>`:payInfo?`<div style="font-size:11px">${payInfo}</div>`:''}
       </div>
@@ -1145,12 +1161,12 @@ async function doCheckIn(id){
   if(gpsData.lat){showToast('Checked in · GPS: '+gpsData.lat+', '+gpsData.lng);}
 }
 
-let coStatus=null,coPayMode=null,coPickerItems={};
+let coStatus=null,coPayMode=null,coPickerItems={},coSelectedPricelist='';
 
 function openCheckoutModal(id){
   const v=VISITS[id];if(!v)return;
   const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
-  coStatus=null;coPayMode=null;coPickerItems={};
+  coStatus=null;coPayMode=null;coPickerItems={};coSelectedPricelist='';
   document.getElementById('co-visit-id').value=id;
   document.getElementById('co-title').textContent='Check out — '+party.name;
   document.getElementById('co-sub').textContent='Checked in at '+fmtTime(v.checkIn);
@@ -1187,28 +1203,43 @@ function togglePay(btn,mode){
 function buildOrderPicker(){
   const wrap=document.getElementById('order-picker-wrap');
   if(!PRODUCTS.length){wrap.innerHTML='<div style="padding:12px;color:var(--text2);font-size:12px">No products in master. Admin needs to add products first.</div>';return}
+  const pls=pricelistsArr().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const cats=[...new Set(PRODUCTS.map(p=>p.category))];
-  let html='<div class="order-picker"><div class="op-header"><span>Product</span><span>Price</span><span>Qty</span><span>Total</span></div>';
+  let plSelector='';
+  if(pls.length){
+    plSelector=`<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label class="form-label" style="margin:0">Pricelist:</label>
+      <select class="filter-select" id="co-pricelist" onchange="coSelectedPricelist=this.value;buildOrderPicker()">
+        <option value="">Base prices</option>
+        ${pls.map(pl=>`<option value="${pl.id}"${coSelectedPricelist===pl.id?' selected':''}>${esc(pl.name)} (${fmtDate(pl.date)})</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  let html=plSelector+'<div class="order-picker"><div class="op-header"><span>Product</span><span>Price</span><span>Qty</span><span>Total</span></div>';
   cats.forEach(cat=>{
     html+=`<div class="op-cat">${esc(cat)}</div>`;
     PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      const price=getProductPrice(p.id,coSelectedPricelist);
+      const prevQty=coPickerItems[p.id]?coPickerItems[p.id].qty:'';
       html+=`<div class="op-row">
         <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)} · ${esc(p.unit)}</div>${p.sizes?`<div>${p.sizes.split(',').map(s=>`<span class="size-badge">${esc(s.trim())}</span>`).join('')}</div>`:''}</div>
-        <div class="price-tag">${fmtMoney(p.price)}</div>
-        <input type="number" class="qty-input" id="qty-${p.id}" min="0" step="1" placeholder="0" oninput="updQty('${p.id}',this.value)">
-        <div style="font-size:11px;font-weight:500;color:var(--accent)" id="rt-${p.id}">—</div>
+        <div class="price-tag">${fmtMoney(price)}</div>
+        <input type="number" class="qty-input" id="qty-${p.id}" min="0" step="1" placeholder="0" value="${prevQty}" oninput="updQty('${p.id}',this.value)">
+        <div style="font-size:11px;font-weight:500;color:var(--accent)" id="rt-${p.id}">${prevQty?fmtMoney(price*prevQty):'—'}</div>
       </div>`;
     });
   });
-  html+=`<div class="op-total"><span>Order total</span><span id="op-grand">₹0</span></div></div>`;
+  const grand=Object.entries(coPickerItems).reduce((s,[pid,{qty}])=>s+getProductPrice(pid,coSelectedPricelist)*qty,0);
+  html+=`<div class="op-total"><span>Order total</span><span id="op-grand">${fmtMoney(grand)}</span></div></div>`;
   wrap.innerHTML=html;
 }
 
 function updQty(prodId,val){
   const qty=parseInt(val)||0;const p=PRODUCTS.find(x=>x.id===prodId);if(!p)return;
+  const price=getProductPrice(prodId,coSelectedPricelist);
   if(qty>0)coPickerItems[prodId]={qty};else delete coPickerItems[prodId];
-  const rt=document.getElementById('rt-'+prodId);if(rt)rt.textContent=qty>0?fmtMoney(p.price*qty):'—';
-  const grand=Object.entries(coPickerItems).reduce((s,[pid,{qty}])=>{const pr=PRODUCTS.find(x=>x.id===pid);return s+(pr?pr.price*qty:0)},0);
+  const rt=document.getElementById('rt-'+prodId);if(rt)rt.textContent=qty>0?fmtMoney(price*qty):'—';
+  const grand=Object.entries(coPickerItems).reduce((s,[pid,{qty}])=>s+getProductPrice(pid,coSelectedPricelist)*qty,0);
   const gt=document.getElementById('op-grand');if(gt)gt.textContent=fmtMoney(grand);
 }
 
@@ -1220,7 +1251,8 @@ async function submitCheckout(){
   const v=VISITS[id];if(!v)return;
   const upd={status:coStatus,checkOut:nowTime(),feedback:document.getElementById('co-feedback').value,
     nextVisit:coStatus==='rescheduled'?document.getElementById('co-rescheddate').value:document.getElementById('co-nextdate').value,
-    orderItems:Object.entries(coPickerItems).map(([prodId,{qty}])=>({prodId,qty}))};
+    orderItems:Object.entries(coPickerItems).map(([prodId,{qty}])=>({prodId,qty})),
+    pricelistId:coSelectedPricelist||''};
   if(coPayMode){
     const amt=parseFloat(document.getElementById('co-pay-amount').value)||0;
     if(amt<=0){showToast('Enter a valid payment amount');return}
@@ -1262,7 +1294,7 @@ function openAddVisitModal(){
   if(!myParties.length){showToast('No parties assigned to you — ask admin to add parties');return}
   const sel=document.getElementById('av-party');
   sel.innerHTML='<option value="">Select party...</option>';
-  myParties.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+(p.city?' ('+p.city+')':'');sel.appendChild(o);});
+  myParties.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+(p.grade?' ['+p.grade+']':'')+(p.city?' ('+p.city+')':'');sel.appendChild(o);});
   document.getElementById('av-time').value='';document.getElementById('av-notes').value='';document.getElementById('av-date').value=today();
   document.getElementById('av-party-info').style.display='none';
   openModal('add-visit-modal');
@@ -1270,7 +1302,7 @@ function openAddVisitModal(){
 function showPartyInfo(partyId){
   const party=PARTIES.find(p=>p.id===partyId);
   const info=document.getElementById('av-party-info');
-  if(party){info.style.display='block';info.innerHTML=`${party.contact?'👤 '+esc(party.contact)+' · ':''}📞 ${esc(party.phone||'—')} · ${esc(party.city)}, ${esc(party.state)}${party.outstanding>0?' · <span style="color:var(--red)">⚠ Due: '+fmtMoney(party.outstanding)+'</span>':''}`;}
+  if(party){info.style.display='block';info.innerHTML=`${party.grade?'<span style="font-weight:600">Grade '+esc(party.grade)+'</span> · ':''}${party.contact?'👤 '+esc(party.contact)+' · ':''}📞 ${esc(party.phone||'—')} · ${esc(party.city)}, ${esc(party.state)}${party.outstanding>0?' · <span style="color:var(--red)">⚠ Due: '+fmtMoney(party.outstanding)+'</span>':''}`;}
   else info.style.display='none';
 }
 async function submitAddVisit(){
@@ -1659,9 +1691,12 @@ function calcMeCA(visitsArray){
 }
 
 /* Helper: is this party a "new" client at the time of the date range?
-   New = has NO completed order visit BEFORE the range start date
-   Existing = has at least one order visit before the range start date */
+   CSV-uploaded = always existing. App-added = new.
+   Fallback: no completed order visit BEFORE the range start date */
 function isNewClientForRange(partyId, rangeFrom){
+  const party=PARTIES.find(p=>p.id===partyId);
+  if(party&&party.source==='csv') return false;
+  if(party&&party.source==='app') return true;
   return !visitsArr().some(v=>
     v.partyId===partyId&&
     v.status==='order'&&
@@ -1943,46 +1978,60 @@ function refreshPayments(){
 function renderParties(){
   const states=[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort();
   const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
+  const pendingCount=PARTIES.filter(p=>p.source==='app'&&!p.approved).length;
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
-      <div><div class="admin-title">Party Master</div><div class="admin-sub">${PARTIES.length} parties total</div></div>
+      <div><div class="admin-title">Party Master ${pendingCount>0?`<span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:12px;padding:3px 10px">${pendingCount} pending approval</span>`:''}</div><div class="admin-sub">${PARTIES.length} parties total</div></div>
       <div class="filter-row">
+        <select class="filter-select" id="pt-grade" onchange="refreshParties()"><option value="all">All grades</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option><option value="">No grade</option></select>
         <select class="filter-select" id="pt-state" onchange="refreshParties()"><option value="all">All states</option>${states.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
         <select class="filter-select" id="pt-sp" onchange="refreshParties()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="pt-type" onchange="refreshParties()"><option value="all">All types</option><option value="new">New (app-added)</option><option value="existing">Existing (CSV)</option><option value="pending">Pending approval</option></select>
         <button class="btn btn-green" onclick="openPartyModal()">+ Add party</button><button class="btn btn-outline" onclick="openCSVPartyModal()">⬆ Import CSV</button>
       </div>
     </div>
     <input class="search-bar" id="pt-search" placeholder="Search party name, contact, city..." oninput="refreshParties()">
-    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Party name</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
+    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Party name</th><th>Grade</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
   </div>`);
   refreshParties();
 }
 function refreshParties(){
   const stF=document.getElementById('pt-state')?.value||'all';const spF=document.getElementById('pt-sp')?.value||'all';
+  const grF=document.getElementById('pt-grade')?.value;const typeF=document.getElementById('pt-type')?.value||'all';
   const q=(document.getElementById('pt-search')?.value||'').toLowerCase();
   const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
   let f=PARTIES.filter(p=>{
     if(stF!=='all'&&p.state!==stF)return false;if(spF!=='all'&&p.spId!==spF)return false;
+    if(grF!==undefined&&grF!=='all'){if(grF===''&&(p.grade||''))return false;if(grF!==''&&p.grade!==grF)return false;}
+    if(typeF==='new'&&p.source!=='app')return false;
+    if(typeF==='existing'&&p.source!=='csv')return false;
+    if(typeF==='pending'&&!(p.source==='app'&&!p.approved))return false;
     if(q&&!p.name.toLowerCase().includes(q)&&!(p.contact||'').toLowerCase().includes(q)&&!(p.city||'').toLowerCase().includes(q))return false;
     return true;
   });
+  const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
+  const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
   document.getElementById('pt-rows').innerHTML=f.map(p=>{
-    const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;const isNew=!lvMap[p.id];
-    return`<tr>
-      <td style="font-weight:600">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder</span>':''}</td>
+    const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;
+    const isNewType=p.source==='app';
+    const isPending=p.source==='app'&&!p.approved;
+    return`<tr${isPending?' style="background:var(--amber-light)"':''}>
+      <td style="font-weight:600">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder</span>':''}${isPending?' <span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:9px;padding:1px 6px">⏳ Pending</span>':''}</td>
+      <td>${p.grade?`<span class="badge" style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:11px;font-weight:600;padding:2px 10px">${esc(p.grade)}</span>`:'—'}</td>
       <td>${esc(p.contact||'—')}</td><td class="time-mono">${esc(p.phone||'—')}</td><td>${esc(p.city||'—')}</td>
       <td><span class="badge badge-state" style="font-size:10px">${esc(p.state)}</span></td>
       <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
-      <td>${isNew?'<span class="badge badge-new" style="font-size:10px">New</span>':'<span class="badge" style="font-size:10px;background:var(--surface2);color:var(--text2)">Existing</span>'}</td>
+      <td>${isNewType?'<span class="badge badge-new" style="font-size:10px">New</span>':'<span class="badge" style="font-size:10px;background:var(--surface2);color:var(--text2)">Existing</span>'}</td>
       <td><span class="${p.outstanding>0?'outstanding-due':'outstanding-ok'}">${p.outstanding>0?fmtMoney(p.outstanding):'Clear'}</span></td>
       <td class="time-mono">${fmtDate(p.lastOrder)}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
+        ${isPending?`<button class="icon-btn" style="color:var(--accent);border-color:var(--accent)" onclick="approveParty('${p.id}')">✓ Approve</button>`:''}
         <button class="icon-btn" onclick="openPartyDrawer('${p.id}')">History</button>
         <button class="icon-btn" onclick="openPartyModal('${p.id}')">Edit</button>
         <button class="icon-btn danger" onclick="deleteParty('${p.id}')">Del</button>
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
+  }).join('')||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
 }
 function openPartyModal(editId){
   if(!SALESPERSONS.length){showToast('Add salespersons first');return}
@@ -1990,21 +2039,27 @@ function openPartyModal(editId){
   SALESPERSONS.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;pmSp.appendChild(o);});
   document.getElementById('pm-title').textContent=editId?'Edit party':'Add party';
   document.getElementById('pm-edit-id').value=editId||'';
-  if(editId){const p=PARTIES.find(x=>x.id===editId);if(!p)return;document.getElementById('pm-name').value=p.name;document.getElementById('pm-contact').value=p.contact||'';document.getElementById('pm-phone').value=p.phone||'';document.getElementById('pm-city').value=p.city||'';document.getElementById('pm-state').value=p.state||'';pmSp.value=p.spId||'';document.getElementById('pm-outstanding').value=p.outstanding||0;document.getElementById('pm-lastorder').value=p.lastOrder||'';}
-  else{['pm-name','pm-contact','pm-phone','pm-city','pm-outstanding','pm-lastorder'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-state').value='';pmSp.value=SALESPERSONS[0]?.id||'';}
+  if(editId){const p=PARTIES.find(x=>x.id===editId);if(!p)return;document.getElementById('pm-name').value=p.name;document.getElementById('pm-contact').value=p.contact||'';document.getElementById('pm-phone').value=p.phone||'';document.getElementById('pm-city').value=p.city||'';document.getElementById('pm-state').value=p.state||'';pmSp.value=p.spId||'';document.getElementById('pm-outstanding').value=p.outstanding||0;document.getElementById('pm-lastorder').value=p.lastOrder||'';document.getElementById('pm-grade').value=p.grade||'';}
+  else{['pm-name','pm-contact','pm-phone','pm-city','pm-outstanding','pm-lastorder'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-state').value='';document.getElementById('pm-grade').value='';pmSp.value=SALESPERSONS[0]?.id||'';}
   openModal('party-modal');
 }
 async function submitParty(){
   const name=document.getElementById('pm-name').value.trim();const state=document.getElementById('pm-state').value;const spId=document.getElementById('pm-sp').value;
   if(!name||!state||!spId){showToast('Name, state and SP required');return}
   const editId=document.getElementById('pm-edit-id').value;
-  const data={name,contact:document.getElementById('pm-contact').value.trim(),phone:document.getElementById('pm-phone').value.trim(),city:document.getElementById('pm-city').value.trim(),state,spId,outstanding:parseFloat(document.getElementById('pm-outstanding').value)||0,lastOrder:document.getElementById('pm-lastorder').value};
+  const data={name,contact:document.getElementById('pm-contact').value.trim(),phone:document.getElementById('pm-phone').value.trim(),city:document.getElementById('pm-city').value.trim(),state,spId,outstanding:parseFloat(document.getElementById('pm-outstanding').value)||0,lastOrder:document.getElementById('pm-lastorder').value,grade:document.getElementById('pm-grade').value||''};
   setSyncStatus('wait','Saving...');
   if(editId) await UPDATE(REF('parties/'+editId),data);
-  else{const id=uid();data.id=id;await SET(REF('parties/'+id),data);}
+  else{const id=uid();data.id=id;data.source='app';data.approved=false;await SET(REF('parties/'+id),data);}
   setSyncStatus('ok','Live');closeModal('party-modal');showToast(editId?'Party updated':'Party added');
 }
 async function deleteParty(id){if(!confirm('Delete this party?'))return;await REMOVE(REF('parties/'+id));showToast('Party deleted');}
+async function approveParty(id){
+  if(!confirm('Approve this new client?'))return;
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('parties/'+id),{approved:true});
+  setSyncStatus('ok','Live');showToast('Party approved');
+}
 
 function openPartyDrawer(partyId){
   const party=PARTIES.find(p=>p.id===partyId);if(!party)return;
@@ -2038,20 +2093,43 @@ function openPartyDrawer(partyId){
 function closeDrawer(){document.getElementById('party-drawer').classList.remove('open');}
 
 /* ════════════════════════════════════════════════════════════
-   ADMIN — PRICELIST
+   ADMIN — PRICELIST (Multiple pricelists with name + date)
    ════════════════════════════════════════════════════════════ */
+function pricelistsArr(){return Object.values(PRICELISTS);}
+
 function renderPricelist(){
   const cats=[...new Set(PRODUCTS.map(p=>p.category).filter(Boolean))].sort();
+  const pls=pricelistsArr().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
-      <div><div class="admin-title">Product Master & Pricelist</div><div class="admin-sub">${PRODUCTS.length} products</div></div>
+      <div><div class="admin-title">Product Master & Pricelists</div><div class="admin-sub">${PRODUCTS.length} products · ${pls.length} pricelists</div></div>
       <div class="filter-row">
         <select class="filter-select" id="pl-cat" onchange="refreshPricelist()"><option value="all">All categories</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
-        <button class="btn btn-green" onclick="openProductModal()">+ Add product</button><button class="btn btn-outline" onclick="openCSVPriceModal()">⬆ Import CSV</button>
+        <button class="btn btn-green" onclick="openProductModal()">+ Add product</button>
+        <button class="btn btn-outline" onclick="openCSVPriceModal()">⬆ Import CSV</button>
       </div>
     </div>
     <input class="search-bar" id="pl-search" placeholder="Search product name or code..." oninput="refreshPricelist()">
-    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>Price</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
+
+    <!-- Pricelists management -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">Pricelists <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="openPricelistModal()">+ New pricelist</button></div>
+      <div id="pl-list-wrap">${pls.length?pls.map(pl=>{
+        const prodCount=pl.prices?Object.keys(pl.prices).length:0;
+        return`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px">${esc(pl.name)}</div>
+            <div style="font-size:11px;color:var(--text2)">${fmtDate(pl.date)} · ${prodCount} products with custom prices</div>
+          </div>
+          <button class="icon-btn" onclick="openPricelistEditor('${pl.id}')">Edit prices</button>
+          <button class="icon-btn" onclick="openPricelistModal('${pl.id}')">Rename</button>
+          <button class="icon-btn danger" onclick="deletePricelist('${pl.id}')">Del</button>
+        </div>`;
+      }).join(''):'<div style="padding:16px;font-size:13px;color:var(--text2)">No pricelists created. Products use base prices by default.</div>'}</div>
+    </div>
+
+    <!-- Product master table -->
+    <div class="card"><div class="card-header">Product master (base prices)</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>Base price</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
   </div>`);
   refreshPricelist();
 }
@@ -2075,16 +2153,98 @@ function openProductModal(editId){
   openModal('product-modal');
 }
 async function submitProduct(){
-  const code=document.getElementById('prod-code').value.trim();const name=document.getElementById('prod-name').value.trim();const mrp=parseFloat(document.getElementById('prod-price').value)||0;const category=document.getElementById('prod-cat').value;
-  if(!code||!name||!category||!mrp){showToast('Code, name, category and MRP required');return}
+  const code=document.getElementById('prod-code').value.trim();const name=document.getElementById('prod-name').value.trim();const price=parseFloat(document.getElementById('prod-price').value)||0;const category=document.getElementById('prod-cat').value;
+  if(!code||!name||!category||!price){showToast('Code, name, category and price required');return}
   const editId=document.getElementById('prod-edit-id').value;
-  const data={code,name,category,unit:document.getElementById('prod-unit').value,mrp,sizes:document.getElementById('prod-sizes').value.trim()};
+  const data={code,name,category,unit:document.getElementById('prod-unit').value,price,sizes:document.getElementById('prod-sizes').value.trim()};
   setSyncStatus('wait','Saving...');
   if(editId) await UPDATE(REF('products/'+editId),data);
   else{const id=uid();data.id=id;await SET(REF('products/'+id),data);}
   setSyncStatus('ok','Live');closeModal('product-modal');showToast(editId?'Product updated':'Product added');
 }
 async function deleteProduct(id){if(!confirm('Delete this product?'))return;await REMOVE(REF('products/'+id));showToast('Deleted');}
+
+/* ── PRICELIST CRUD ── */
+function openPricelistModal(editId){
+  const title=editId?'Edit pricelist':'New pricelist';
+  const pl=editId?PRICELISTS[editId]:null;
+  const nameVal=pl?pl.name:'';const dateVal=pl?pl.date:today();
+  const html=`<div class="modal-handle"></div>
+    <div class="modal-title">${title}</div>
+    <label class="form-label">Pricelist name *</label>
+    <input type="text" class="form-input" id="prl-name" value="${esc(nameVal)}" placeholder="e.g. Wholesale Jan 2026">
+    <label class="form-label">Date *</label>
+    <input type="date" class="form-input" id="prl-date" value="${dateVal}">
+    <button class="btn btn-green btn-full" onclick="submitPricelist('${editId||''}')">Save pricelist</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('pricelist-modal')">Cancel</button>`;
+  let modal=document.getElementById('pricelist-modal');
+  if(!modal){modal=document.createElement('div');modal.className='modal-overlay';modal.id='pricelist-modal';modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open');};
+    const inner=document.createElement('div');inner.className='modal';inner.id='pricelist-modal-inner';modal.appendChild(inner);document.body.appendChild(modal);}
+  document.getElementById('pricelist-modal-inner').innerHTML=html;
+  modal.classList.add('open');
+}
+async function submitPricelist(editId){
+  const name=document.getElementById('prl-name').value.trim();const date=document.getElementById('prl-date').value;
+  if(!name||!date){showToast('Name and date required');return}
+  setSyncStatus('wait','Saving...');
+  if(editId){await UPDATE(REF('pricelists/'+editId),{name,date});}
+  else{const id=uid();await SET(REF('pricelists/'+id),{id,name,date,prices:{}});}
+  setSyncStatus('ok','Live');document.getElementById('pricelist-modal').classList.remove('open');showToast(editId?'Pricelist updated':'Pricelist created');
+}
+async function deletePricelist(id){if(!confirm('Delete this pricelist?'))return;await REMOVE(REF('pricelists/'+id));showToast('Pricelist deleted');}
+
+function openPricelistEditor(plId){
+  const pl=PRICELISTS[plId];if(!pl)return;
+  const prices=pl.prices||{};
+  const cats=[...new Set(PRODUCTS.map(p=>p.category))];
+  let rows='';
+  cats.forEach(cat=>{
+    rows+=`<div class="op-cat">${esc(cat)}</div>`;
+    PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      const customPrice=prices[p.id]!==undefined?prices[p.id]:'';
+      rows+=`<div class="op-row" style="grid-template-columns:1fr 80px 90px">
+        <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)}</div></div>
+        <div class="price-tag" style="font-size:11px">Base: ${fmtMoney(p.price)}</div>
+        <input type="number" class="qty-input" style="width:80px" id="plp-${p.id}" value="${customPrice}" placeholder="${p.price}" min="0" step="0.01">
+      </div>`;
+    });
+  });
+  const html=`<div class="modal-handle"></div>
+    <div class="modal-title">Edit prices — ${esc(pl.name)}</div>
+    <div class="modal-sub">${fmtDate(pl.date)} · Leave blank to use base price</div>
+    <div class="order-picker" style="max-height:400px;overflow-y:auto">
+      <div class="op-header" style="grid-template-columns:1fr 80px 90px"><span>Product</span><span>Base</span><span>Custom</span></div>
+      ${rows}
+    </div>
+    <button class="btn btn-green btn-full" style="margin-top:12px" onclick="savePricelistPrices('${plId}')">Save prices</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('pricelist-editor-modal')">Cancel</button>`;
+  let modal=document.getElementById('pricelist-editor-modal');
+  if(!modal){modal=document.createElement('div');modal.className='modal-overlay';modal.id='pricelist-editor-modal';modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open');};
+    const inner=document.createElement('div');inner.className='modal modal-wide';inner.id='pricelist-editor-inner';modal.appendChild(inner);document.body.appendChild(modal);}
+  document.getElementById('pricelist-editor-inner').innerHTML=html;
+  modal.classList.add('open');
+}
+async function savePricelistPrices(plId){
+  const prices={};
+  PRODUCTS.forEach(p=>{
+    const el=document.getElementById('plp-'+p.id);
+    if(el&&el.value!==''){const v=parseFloat(el.value);if(!isNaN(v)&&v>0)prices[p.id]=v;}
+  });
+  setSyncStatus('wait','Saving...');
+  await UPDATE(REF('pricelists/'+plId),{prices});
+  setSyncStatus('ok','Live');
+  document.getElementById('pricelist-editor-modal').classList.remove('open');
+  showToast('Prices saved');
+}
+
+function getProductPrice(prodId,pricelistId){
+  if(pricelistId&&PRICELISTS[pricelistId]){
+    const pl=PRICELISTS[pricelistId];
+    if(pl.prices&&pl.prices[prodId]!==undefined)return pl.prices[prodId];
+  }
+  const p=PRODUCTS.find(x=>x.id===prodId);
+  return p?p.price:0;
+}
 
 /* ════════════════════════════════════════════════════════════
    ADMIN — SETTINGS
@@ -2182,7 +2342,7 @@ async function startNewFY(){
 }
 
 function exportAllData(){
-  const data={salespersons:SALESPERSONS,parties:PARTIES,products:PRODUCTS,visits:visitsArr(),tours:toursArr(),targets:TARGETS,exported:new Date().toISOString()};
+  const data={salespersons:SALESPERSONS,parties:PARTIES,products:PRODUCTS,visits:visitsArr(),tours:toursArr(),targets:TARGETS,pricelists:pricelistsArr(),exported:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`craze-data-${today()}.json`;a.click();
 }
@@ -2285,18 +2445,20 @@ function previewPartyCSV(){
   reader.onload=e=>{
     const{headers,rows}=parseCSV(e.target.result);
     const errors=[];const preview=[];let valid=0;
+    const VALID_GRADES=['A','B','C',''];
     rows.forEach((row,i)=>{
-      const name=(row[0]||'').trim();const city=(row[1]||'').trim();const state=(row[2]||'').trim();const spName=(row[3]||'').trim();
+      const name=(row[0]||'').trim();const city=(row[1]||'').trim();const state=(row[2]||'').trim();const spName=(row[3]||'').trim();const grade=(row[4]||'').trim().toUpperCase();
       if(!name){errors.push(`Row ${i+2}: Party name missing`);return;}
       if(!state){errors.push(`Row ${i+2}: State missing for "${name}"`);return;}
+      if(grade&&!VALID_GRADES.includes(grade)){errors.push(`Row ${i+2}: Grade "${grade}" invalid. Use A, B, or C`);return;}
       const sp=SALESPERSONS.find(s=>s.name.toLowerCase().includes(spName.toLowerCase())||spName.toLowerCase().includes(s.name.split(' ')[0].toLowerCase()));
       if(!sp){errors.push(`Row ${i+2}: SP "${spName}" not found in system`);return;}
       const dup=PARTIES.find(p=>p.name.toLowerCase()===name.toLowerCase()&&(p.city||'').toLowerCase()===(city||'').toLowerCase());
       if(dup){errors.push(`Row ${i+2}: "${name}" already exists — skipped`);return;}
-      preview.push({name,city,state,spId:sp.id,spName:sp.name});valid++;
+      preview.push({name,city,state,spId:sp.id,spName:sp.name,grade:grade||''});valid++;
     });
     document.getElementById('csv-party-count').textContent=`${valid} parties ready to import (${rows.length} rows processed)`;
-    document.getElementById('csv-party-rows').innerHTML=preview.slice(0,10).map(p=>`<div style="padding:4px 10px;border-bottom:1px solid var(--border)">${esc(p.name)} · ${esc(p.city)} · ${esc(p.state)} → ${esc(p.spName)}</div>`).join('')+(preview.length>10?`<div style="padding:4px 10px;color:var(--text2)">...and ${preview.length-10} more</div>`:'');
+    document.getElementById('csv-party-rows').innerHTML=preview.slice(0,10).map(p=>`<div style="padding:4px 10px;border-bottom:1px solid var(--border)">${esc(p.name)} · ${esc(p.city)} · ${esc(p.state)} → ${esc(p.spName)}${p.grade?' · Grade '+esc(p.grade):''}</div>`).join('')+(preview.length>10?`<div style="padding:4px 10px;color:var(--text2)">...and ${preview.length-10} more</div>`:'');
     document.getElementById('csv-party-errors').innerHTML=errors.map(e=>`<div>⚠ ${esc(e)}</div>`).join('');
     document.getElementById('csv-party-preview').style.display='block';
     document.getElementById('csv-party-import-btn').style.display=valid>0?'block':'none';
@@ -2312,7 +2474,7 @@ async function importPartyCSV(){
   const updates={};
   parties.forEach(p=>{
     const id=uid();
-    updates['parties/'+id]={id,name:p.name,city:p.city,state:p.state,spId:p.spId,contact:'',phone:'',outstanding:0,lastOrder:''};
+    updates['parties/'+id]={id,name:p.name,city:p.city,state:p.state,spId:p.spId,contact:'',phone:'',outstanding:0,lastOrder:'',grade:p.grade||'',source:'csv',approved:true};
   });
   await UPDATE(REF('/'),updates);
   setSyncStatus('ok','Live');
@@ -2485,12 +2647,13 @@ window.addEventListener('appinstalled', () => {
   <div class="modal-sub">Upload a CSV file to bulk-add parties</div>
   <div style="background:var(--surface2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.8">
     <strong>Required CSV format:</strong><br>
-    <code style="font-family:var(--mono);font-size:11px">Party Name, City, State, Salesperson Name</code><br>
+    <code style="font-family:var(--mono);font-size:11px">Party Name, City, State, Salesperson Name, Grade</code><br>
     <strong>Example row:</strong><br>
-    <code style="font-family:var(--mono);font-size:11px">Sharma Traders, Surat, Gujarat, Raunak</code><br><br>
+    <code style="font-family:var(--mono);font-size:11px">Sharma Traders, Surat, Gujarat, Raunak, A</code><br><br>
     • First row must be the header row (as shown above)<br>
     • Salesperson name must exactly match a name in your system<br>
-    • Party type (New/Existing) is set automatically from order history<br>
+    • Grade is optional — use A, B, or C (leave blank to skip)<br>
+    • CSV-imported parties are automatically marked as <strong>Existing</strong> clients<br>
     • Duplicates (same name + city) will be skipped
   </div>
   <label class="form-label">Select CSV file</label>
