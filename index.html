@@ -2298,6 +2298,27 @@ function renderSettingsView(){
         </div>
       </div>
     </div>
+
+    <!-- Reset Data -->
+    <div class="card" style="margin-top:16px;border:1.5px solid var(--red)">
+      <div class="card-header" style="background:var(--red-light);color:var(--red)">⚠ Reset data</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;color:var(--text2);line-height:1.7">Permanently delete data from Firebase. <strong>This cannot be undone.</strong> Export a backup first.</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-visits" style="width:16px;height:16px" checked> Visits & orders</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-parties" style="width:16px;height:16px"> Parties</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-products" style="width:16px;height:16px"> Products</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-pricelists" style="width:16px;height:16px"> Pricelists</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-tours" style="width:16px;height:16px"> Tours & expenses</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-targets" style="width:16px;height:16px"> Targets</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rst-sp" style="width:16px;height:16px"> Salespersons</label>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-red" onclick="resetSelectedData()">Delete selected data</button>
+          <button class="btn btn-red" style="background:var(--red);color:white" onclick="resetAllData()">Delete ALL data</button>
+        </div>
+      </div>
+    </div>
   </div>`);
 }
 
@@ -2345,6 +2366,29 @@ function exportAllData(){
   const data={salespersons:SALESPERSONS,parties:PARTIES,products:PRODUCTS,visits:visitsArr(),tours:toursArr(),targets:TARGETS,pricelists:pricelistsArr(),exported:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`craze-data-${today()}.json`;a.click();
+}
+
+async function resetSelectedData(){
+  const map={visits:'rst-visits',parties:'rst-parties',products:'rst-products',pricelists:'rst-pricelists',tours:'rst-tours',targets:'rst-targets',salespersons:'rst-sp'};
+  const toDelete=Object.entries(map).filter(([k,id])=>document.getElementById(id)?.checked).map(([k])=>k);
+  if(!toDelete.length){showToast('Select at least one data type to delete');return}
+  if(!confirm('Permanently delete: '+toDelete.join(', ')+'?\n\nThis CANNOT be undone. Export a backup first!'))return;
+  setSyncStatus('wait','Deleting...');
+  try{
+    const updates={};toDelete.forEach(k=>{updates[k]=null;});
+    await UPDATE(REF('/'),updates);
+    setSyncStatus('ok','Live');showToast(toDelete.join(', ')+' deleted');renderSettingsView();
+  }catch(e){setSyncStatus('err','Error');showToast('Delete failed: '+e.message);}
+}
+
+async function resetAllData(){
+  if(!confirm('⚠ DELETE ALL DATA?\n\nThis will permanently erase:\n• All salespersons\n• All parties\n• All products & pricelists\n• All visits & orders\n• All tours & expenses\n• All targets\n\nThis CANNOT be undone!'))return;
+  if(!confirm('Are you absolutely sure? Type OK to confirm.'))return;
+  setSyncStatus('wait','Deleting everything...');
+  try{
+    await UPDATE(REF('/'),{salespersons:null,parties:null,products:null,visits:null,tours:null,targets:null,pricelists:null});
+    setSyncStatus('ok','Live');showToast('All data deleted');renderSettingsView();
+  }catch(e){setSyncStatus('err','Error');showToast('Delete failed: '+e.message);}
 }
 
 function openAddSPModal(){openSPModal(null);}
