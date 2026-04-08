@@ -720,6 +720,24 @@ input,textarea,select{font-family:var(--font)}
 </div>
 </div>
 
+<!-- NEW PARTY VISIT MODAL (SP) -->
+<div class="modal-overlay" id="new-party-visit-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="modal-title">New party visit</div>
+  <div class="modal-sub">Add a new party and check in immediately</div>
+  <label class="form-label">Party / Firm name *</label>
+  <input type="text" class="form-input" id="npv-name" placeholder="Full firm name">
+  <div class="form-row">
+    <div><label class="form-label">City / Area *</label><input type="text" class="form-input" id="npv-city" placeholder="City or area"></div>
+    <div><label class="form-label">Phone</label><input type="text" class="form-input" id="npv-phone" placeholder="Phone number" inputmode="tel"></div>
+  </div>
+  <div class="gps-indicator"><div class="pulse-dot"></div> GPS will be captured on check-in</div>
+  <button class="btn btn-green btn-full" onclick="submitNewPartyVisit()">Create party & Check in</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('new-party-visit-modal')">Cancel</button>
+</div>
+</div>
+
 <!-- CHANGE ADMIN PASSWORD MODAL -->
 <div class="modal-overlay" id="pwd-modal">
 <div class="modal">
@@ -1071,6 +1089,10 @@ function renderMobileView(){
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       Add visit to plan
     </button>
+    <button class="add-btn" style="border-color:var(--teal);color:var(--teal)" onclick="openNewPartyVisitModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      New party visit
+    </button>
     <button class="add-btn wa" onclick="openWASummary()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 13A6 6 0 107 1a6 6 0 000 12z" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3L9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       WhatsApp day summary
@@ -1314,6 +1336,63 @@ async function submitAddVisit(){
   closeModal('add-visit-modal');showToast('Visit added');
 }
 
+/* ── NEW PARTY VISIT (SP creates party + checks in immediately) ── */
+function openNewPartyVisitModal(){
+  document.getElementById('npv-name').value='';
+  document.getElementById('npv-city').value='';
+  document.getElementById('npv-phone').value='';
+  openModal('new-party-visit-modal');
+}
+
+async function submitNewPartyVisit(){
+  const name=document.getElementById('npv-name').value.trim();
+  const city=document.getElementById('npv-city').value.trim();
+  const phone=document.getElementById('npv-phone').value.trim();
+  if(!name){showToast('Party name is required');return}
+  if(!city){showToast('City is required');return}
+
+  // Check duplicate
+  const dup=PARTIES.find(p=>p.name.toLowerCase()===name.toLowerCase()&&(p.city||'').toLowerCase()===city.toLowerCase());
+  if(dup){showToast('Party "'+name+'" in '+city+' already exists');return}
+
+  setSyncStatus('wait','Creating party...');
+  showToast('Getting your location...');
+
+  // Get GPS
+  let gpsData={lat:null,lng:null,accuracy:null,x:15+Math.random()*70,y:15+Math.random()*70};
+  try{
+    const pos=await new Promise((resolve,reject)=>{
+      if(!navigator.geolocation){reject(new Error('GPS not supported'));return;}
+      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+    });
+    gpsData.lat=+pos.coords.latitude.toFixed(6);
+    gpsData.lng=+pos.coords.longitude.toFixed(6);
+    gpsData.accuracy=Math.round(pos.coords.accuracy);
+  }catch(e){
+    showToast('GPS unavailable — continuing without location');
+  }
+
+  try{
+    // 1. Create the party
+    const partyId=uid();
+    const partyData={id:partyId,name,city,state:'',contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:'',grade:'',source:'app',approved:false};
+    await SET(REF('parties/'+partyId),partyData);
+
+    // 2. Create the visit and auto-check-in
+    const visitId=uid();
+    const visitData={id:visitId,spId:currentSP.id,partyId,plannedTime:nowTime(),date:today(),status:'active',checkIn:nowTime(),checkOut:null,feedback:'',nextVisit:'',orderItems:[],payment:null,gps:gpsData};
+    await SET(REF('visits/'+visitId),visitData);
+
+    setSyncStatus('ok','Live');
+    closeModal('new-party-visit-modal');
+    if(gpsData.lat){showToast('Party created & checked in · GPS: '+gpsData.lat+', '+gpsData.lng);}
+    else{showToast('Party created & checked in');}
+  }catch(e){
+    setSyncStatus('err','Error');
+    showToast('Failed: '+e.message);
+  }
+}
+
 /* ════════════════════════════════════════════════════════════
    ADMIN — DASHBOARD
    ════════════════════════════════════════════════════════════ */
@@ -1377,7 +1456,14 @@ function renderDashboard(){
     return`<div class="map-pin" style="left:${v.gps.x}%;top:${v.gps.y}%;background:${colorMap[v.status]||'#999'}" title="${party?party.name:''}"></div>`;
   }).join('');
 
+  const pendingNewParties=PARTIES.filter(p=>p.source==='app'&&!p.approved);
+  const pendingBanner=pendingNewParties.length?`<div style="background:var(--amber-light);border:1px solid #F0C68A;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;color:var(--amber)"><strong>${pendingNewParties.length} new ${pendingNewParties.length===1?'party':'parties'}</strong> added by salespersons — pending review</div>
+    <button class="btn btn-amber" style="font-size:12px" onclick="document.getElementById('nav-tab-parties').click()">Review in Parties →</button>
+  </div>`:'';
+
   setViewHTML(`<div class="admin-shell">
+    ${pendingBanner}
     <div class="admin-topbar">
       <div><div class="admin-title">Daily Report</div><div class="admin-sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
       <div class="filter-row" id="dash-filters">
