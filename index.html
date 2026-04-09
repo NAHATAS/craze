@@ -221,9 +221,9 @@ input,textarea,select{font-family:var(--font)}
 
 /* ── ORDER PICKER ── */
 .order-picker{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
-.op-header{background:var(--surface2);padding:7px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:grid;grid-template-columns:1fr 76px 64px 58px;gap:8px}
+.op-header{background:var(--surface2);padding:7px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:grid;grid-template-columns:30px 1fr 76px 64px 58px;gap:8px}
 .op-cat{padding:5px 12px;background:var(--surface2);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-top:1px solid var(--border)}
-.op-row{display:grid;grid-template-columns:1fr 76px 64px 58px;gap:8px;padding:8px 12px;border-top:1px solid var(--border);align-items:center;font-size:12px}
+.op-row{display:grid;grid-template-columns:30px 1fr 76px 64px 58px;gap:8px;padding:8px 12px;border-top:1px solid var(--border);align-items:center;font-size:12px}
 .op-row:hover{background:var(--surface2)}
 .qty-input{width:52px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;outline:none}
 .qty-input:focus{border-color:var(--accent)}
@@ -267,7 +267,7 @@ input,textarea,select{font-family:var(--font)}
 .meca-revenue-row{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .meca-formula-steps{padding:10px 16px;background:var(--surface2);font-size:11px;color:var(--text2);line-height:1.8}
 .meca-formula-steps span{font-weight:600;color:var(--text);font-family:var(--mono)}
-.sp-meca-row{display:grid;grid-template-columns:140px repeat(5,1fr);align-items:center;border-bottom:1px solid var(--border)}
+.sp-meca-row{display:grid;grid-template-columns:40px 140px repeat(5,1fr);align-items:center;border-bottom:1px solid var(--border)}
 .sp-meca-row:last-child{border-bottom:none}
 .sp-meca-cell{padding:10px 12px;font-size:12px;text-align:center;border-right:1px solid var(--border)}
 .sp-meca-cell:first-child{text-align:left}
@@ -1237,13 +1237,16 @@ function buildOrderPicker(){
       </select>
     </div>`;
   }
-  let html=plSelector+'<div class="order-picker"><div class="op-header"><span>Product</span><span>Price</span><span>Qty</span><span>Total</span></div>';
+  let html=plSelector+'<div class="order-picker"><div class="op-header"><span>Sl</span><span>Product</span><span>Price</span><span>Qty</span><span>Total</span></div>';
+  let opSlNo=0;
   cats.forEach(cat=>{
     html+=`<div class="op-cat">${esc(cat)}</div>`;
     PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      opSlNo++;
       const price=getProductPrice(p.id,coSelectedPricelist);
       const prevQty=coPickerItems[p.id]?coPickerItems[p.id].qty:'';
       html+=`<div class="op-row">
+        <div style="font-size:11px;color:var(--text3);text-align:center;font-weight:500">${opSlNo}</div>
         <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)} · ${esc(p.unit)}</div>${p.sizes?`<div>${p.sizes.split(',').map(s=>`<span class="size-badge">${esc(s.trim())}</span>`).join('')}</div>`:''}</div>
         <div class="price-tag">${fmtMoney(price)}</div>
         <input type="number" class="qty-input" id="qty-${p.id}" min="0" step="1" placeholder="0" value="${prevQty}" oninput="updQty('${p.id}',this.value)">
@@ -1407,11 +1410,12 @@ function renderDashboard(){
 
   const bh=s=>{const m={planned:['badge-planned','Planned'],active:['badge-active','In visit'],order:['badge-order','Order recd'],noorder:['badge-noorder','No order'],rescheduled:['badge-resched','Rescheduled'],feedback:['badge-feedback','Follow-up']};const[c,t]=m[s]||['','?'];return`<span class="badge ${c}">${t}</span>`};
 
-  const tableRows=todayV.sort((a,b)=>(a.plannedTime||'99:99').localeCompare(b.plannedTime||'99:99')).map(v=>{
+  const tableRows=todayV.sort((a,b)=>(a.plannedTime||'99:99').localeCompare(b.plannedTime||'99:99')).map((v,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
     const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',state:'—'};
     const ov=orderValue(v);
     return`<tr>
+      <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
       <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
       <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(party.name)}</td>
       <td><span class="badge badge-state" style="font-size:10px">${esc(party.state)}</span></td>
@@ -1483,8 +1487,8 @@ function renderDashboard(){
         <div class="card">
           <div class="card-header">Visit plan & status <span class="card-header-sub">${todayV.length} visits</span></div>
           <div class="tbl-scroll"><table class="tbl">
-            <thead><tr><th>SP</th><th>Party</th><th>State</th><th>Planned</th><th>In</th><th>Out</th><th>Dur</th><th>Status</th><th>Order value</th><th>Payment</th><th>Feedback</th></tr></thead>
-            <tbody>${tableRows||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text2)">No visits today</td></tr>'}</tbody>
+            <thead><tr><th>Sl</th><th>SP</th><th>Party</th><th>State</th><th>Planned</th><th>In</th><th>Out</th><th>Dur</th><th>Status</th><th>Order value</th><th>Payment</th><th>Feedback</th></tr></thead>
+            <tbody>${tableRows||'<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text2)">No visits today</td></tr>'}</tbody>
           </table></div>
         </div>
       </div>
@@ -1517,7 +1521,7 @@ function renderDashboard(){
    ════════════════════════════════════════════════════════════ */
 function renderTours(){
   const ta=toursArr().sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
-  const roiRows=ta.map(t=>{
+  const roiRows=ta.map((t,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;
     const tv=tourVisits(t);const orders=tv.filter(v=>v.status==='order').length;
     const ov=tourOrderValue(t);const exp=t.expenseAmount||0;const adv=t.advance||0;
@@ -1526,6 +1530,7 @@ function renderTours(){
     const rc=roi===null?'':roi>=3?'roi-good':roi>=1.5?'roi-ok':'roi-bad';
     const sm={active:'tour-active',pending:'tour-pending',approved:'tour-approved',rejected:'tour-rejected',draft:'tour-draft'};
     return`<tr>
+      <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
       <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
       <td style="font-weight:500">${esc(t.area)}</td>
       <td class="time-mono" style="white-space:nowrap">${fmtDate(t.fromDate)}–${fmtDate(t.toDate)}</td>
@@ -1580,8 +1585,8 @@ function renderTours(){
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">Tour ROI — expenses vs orders</div>
       <div class="tbl-scroll"><table class="tbl">
-        <thead><tr><th>SP</th><th>Tour</th><th>Dates</th><th>Visits</th><th>Orders</th><th>Order value</th><th>Advance</th><th>Expense</th><th>Balance</th><th>Profit</th><th>ROI</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>${roiRows||'<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text2)">No tours yet</td></tr>'}</tbody>
+        <thead><tr><th>Sl</th><th>SP</th><th>Tour</th><th>Dates</th><th>Visits</th><th>Orders</th><th>Order value</th><th>Advance</th><th>Expense</th><th>Balance</th><th>Profit</th><th>ROI</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${roiRows||'<tr><td colspan="14" style="text-align:center;padding:20px;color:var(--text2)">No tours yet</td></tr>'}</tbody>
       </table></div>
     </div>
     ${ta.map(t=>buildTourCardHTML(t)).join('')}
@@ -1863,10 +1868,11 @@ function refreshMeCAContent(){
     <div class="meca-formula-steps"><span>${m.Me}</span> unique parties × <span>${m.C}%</span> conv = <span>${m.clients}</span> clients · × avg <span>${fmtMoney(m.A)}</span> = <span>${fmtMoney(m.revenue)}</span> revenue</div>
   </div>`;
 
-  const spRows=SALESPERSONS.map(sp=>{
+  const spRows=SALESPERSONS.map((sp,idx)=>{
     const sv=fv.filter(v=>v.spId===sp.id);const m=calcMeCA(sv);
     const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut).length;
     return`<div class="sp-meca-row">
+      <div class="sp-meca-cell" style="text-align:center;font-weight:500;color:var(--text3)">${idx+1}</div>
       <div class="sp-meca-cell"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></div>
       <div class="sp-meca-cell" style="font-weight:600">${m.Me}<div style="font-size:10px;color:var(--text3);font-weight:400">${totalVisits} visits</div></div>
       <div class="sp-meca-cell">${m.converted}</div>
@@ -1879,11 +1885,11 @@ function refreshMeCAContent(){
   // Monthly trend
   const months=[];for(let i=3;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push({year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})});}
   let totMe=0,totC=0,totA=0,totRev=0,cnt=0;
-  const mRows=months.map(({year,month,label})=>{
+  const mRows=months.map(({year,month,label},idx)=>{
     const mFrom=new Date(year,month,1).toISOString().slice(0,10);const mTo=new Date(year,month+1,0).toISOString().slice(0,10);
     let mv=visitsArr().filter(v=>v.date>=mFrom&&v.date<=mTo);if(spF!=='all')mv=mv.filter(v=>v.spId===spF);
     const m=calcMeCA(mv);if(m.Me>0){totMe+=m.Me;totC+=m.C;totA+=m.A;totRev+=m.revenue;cnt++;}
-    return`<tr><td>${label}</td><td>${m.Me}</td><td style="color:${m.C>=50?'var(--accent)':'var(--red)'}">${m.C}%</td><td class="price-tag">${fmtMoney(m.A)}</td><td style="font-weight:500;color:var(--accent)">${fmtMoney(m.revenue)}</td><td>${m.converted}</td></tr>`;
+    return`<tr><td style="text-align:center;color:var(--text3)">${idx+1}</td><td>${label}</td><td>${m.Me}</td><td style="color:${m.C>=50?'var(--accent)':'var(--red)'}">${m.C}%</td><td class="price-tag">${fmtMoney(m.A)}</td><td style="font-weight:500;color:var(--accent)">${fmtMoney(m.revenue)}</td><td>${m.converted}</td></tr>`;
   }).join('');
   const avg={Me:cnt?Math.round(totMe/cnt):0,C:cnt?Math.round(totC/cnt):0,A:cnt?Math.round(totA/cnt):0,Rev:cnt?Math.round(totRev/cnt):0};
 
@@ -1896,19 +1902,19 @@ function refreshMeCAContent(){
       <div class="card-header">MeCA by salesperson</div>
       <div style="overflow-x:auto">
         <div class="sp-meca-row" style="background:var(--surface2);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">
-          <div class="sp-meca-cell">Salesperson</div><div class="sp-meca-cell">Meetings</div><div class="sp-meca-cell">Converted</div><div class="sp-meca-cell">Conv. %</div><div class="sp-meca-cell">Avg sale</div><div class="sp-meca-cell">Revenue</div>
+          <div class="sp-meca-cell" style="text-align:center;max-width:40px">Sl</div><div class="sp-meca-cell">Salesperson</div><div class="sp-meca-cell">Meetings</div><div class="sp-meca-cell">Converted</div><div class="sp-meca-cell">Conv. %</div><div class="sp-meca-cell">Avg sale</div><div class="sp-meca-cell">Revenue</div>
         </div>
         ${spRows}
         <div class="sp-meca-row" style="background:var(--surface2);font-weight:600">
-          <div class="sp-meca-cell">TOTAL</div><div class="sp-meca-cell">${mTotal.Me}</div><div class="sp-meca-cell">${mTotal.converted}</div><div class="sp-meca-cell">${mTotal.C}%</div><div class="sp-meca-cell price-tag">${fmtMoney(mTotal.A)}</div><div class="sp-meca-cell" style="color:var(--accent)">${fmtMoney(mTotal.revenue)}</div>
+          <div class="sp-meca-cell"></div><div class="sp-meca-cell">TOTAL</div><div class="sp-meca-cell">${mTotal.Me}</div><div class="sp-meca-cell">${mTotal.converted}</div><div class="sp-meca-cell">${mTotal.C}%</div><div class="sp-meca-cell price-tag">${fmtMoney(mTotal.A)}</div><div class="sp-meca-cell" style="color:var(--accent)">${fmtMoney(mTotal.revenue)}</div>
         </div>
       </div>
     </div>
     <div class="card">
       <div class="card-header">Monthly trend <span class="card-header-sub">Q avg shown in last row</span></div>
       <div class="tbl-scroll"><table class="tbl meca-monthly">
-        <thead><tr><th>Month</th><th>Me</th><th>C (%)</th><th>A (₹)</th><th>Revenue</th><th>Converted</th></tr></thead>
-        <tbody>${mRows}<tr><td>Q Avg</td><td>${avg.Me}</td><td>${avg.C}%</td><td class="price-tag">${fmtMoney(avg.A)}</td><td style="color:var(--accent)">${fmtMoney(avg.Rev)}</td><td>—</td></tr></tbody>
+        <thead><tr><th>Sl</th><th>Month</th><th>Me</th><th>C (%)</th><th>A (₹)</th><th>Revenue</th><th>Converted</th></tr></thead>
+        <tbody>${mRows}<tr><td></td><td>Q Avg</td><td>${avg.Me}</td><td>${avg.C}%</td><td class="price-tag">${fmtMoney(avg.A)}</td><td style="color:var(--accent)">${fmtMoney(avg.Rev)}</td><td>—</td></tr></tbody>
       </table></div>
     </div>`;
 }
@@ -1934,7 +1940,7 @@ function renderProductReport(){
       <div class="card"><div class="card-header">Top products by qty</div><div style="padding:14px 16px" id="pr-qty"></div></div>
       <div class="card"><div class="card-header">Top products by value</div><div style="padding:14px 16px" id="pr-val"></div></div>
     </div>
-    <div class="card"><div class="card-header">By salesperson</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>SP</th><th>Product</th><th>Category</th><th>Qty</th><th>Value</th><th>Orders</th></tr></thead><tbody id="pr-sp-rows"></tbody></table></div></div>
+    <div class="card"><div class="card-header">By salesperson</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>SP</th><th>Product</th><th>Category</th><th>Qty</th><th>Value</th><th>Orders</th></tr></thead><tbody id="pr-sp-rows"></tbody></table></div></div>
   </div>`);
   refreshPR();
 }
@@ -1955,12 +1961,14 @@ function refreshPR(){
   document.getElementById('pr-qty').innerHTML=pl.slice(0,8).map(x=>bar(x,maxQ)).join('')||'<div style="padding:12px;color:var(--text2);font-size:12px">No orders in period</div>';
   document.getElementById('pr-val').innerHTML=byV.slice(0,8).map(x=>`<div class="prod-bar-row"><div class="prod-bar-name">${esc(x.prod.name)}</div><div class="prod-bar-bg"><div class="prod-bar-fill" style="width:${Math.round(x.value/maxV*100)}%;background:var(--amber)"></div></div><div class="prod-bar-val">${fmtMoney(x.value)}</div></div>`).join('');
   const tbody=document.getElementById('pr-sp-rows');if(!tbody)return;tbody.innerHTML='';
+  let prSlNo=0;
   SALESPERSONS.forEach(sp=>{
     const sv=filtered.filter(v=>v.spId===sp.id);const sm={};
     sv.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!sm[i.prodId])sm[i.prodId]={prod:p,qty:0,value:0,orders:0};sm[i.prodId].qty+=i.qty;sm[i.prodId].value+=p.price*i.qty;sm[i.prodId].orders++;});});
     const sl=Object.values(sm).sort((a,b)=>b.qty-a.qty);
-    if(!sl.length){const tr=document.createElement('tr');tr.innerHTML=`<td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td colspan="5" style="color:var(--text3);font-size:12px">No orders in period</td>`;tbody.appendChild(tr);}
-    else sl.forEach((x,idx)=>{const tr=document.createElement('tr');tr.innerHTML=`${idx===0?`<td rowspan="${sl.length}"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>`:''}
+    prSlNo++;
+    if(!sl.length){const tr=document.createElement('tr');tr.innerHTML=`<td style="font-weight:500;color:var(--text3);text-align:center">${prSlNo}</td><td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td colspan="5" style="color:var(--text3);font-size:12px">No orders in period</td>`;tbody.appendChild(tr);}
+    else sl.forEach((x,idx)=>{const tr=document.createElement('tr');tr.innerHTML=`${idx===0?`<td rowspan="${sl.length}" style="font-weight:500;color:var(--text3);text-align:center;vertical-align:top">${prSlNo}</td><td rowspan="${sl.length}"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>`:''}
       <td>${esc(x.prod.name)}</td><td><span class="badge badge-state" style="font-size:10px">${esc(x.prod.category)}</span></td><td style="text-align:center;font-weight:500">${x.qty} ${esc(x.prod.unit)}</td><td class="price-tag">${fmtMoney(x.value)}</td><td style="text-align:center">${x.orders}</td>`;tbody.appendChild(tr);});
   });
 }
@@ -2000,14 +2008,14 @@ function refreshInactive(){
   .sort((a,b)=>{if(a.daysSince===null&&b.daysSince===null)return 0;if(a.daysSince===null)return-1;if(b.daysSince===null)return 1;return b.daysSince-a.daysSince;});
   const list=document.getElementById('inactive-list');if(!list)return;
   if(!parties.length){list.innerHTML=`<div style="background:var(--accent-light);border-radius:var(--r-lg);padding:24px;text-align:center;color:var(--accent);font-size:13px;font-weight:500">All parties visited in the last ${days} days!</div>`;return}
-  list.innerHTML=parties.map(p=>{
+  list.innerHTML=parties.map((p,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;
     const isCrit=p.daysSince===null||p.daysSince>days*2;const isWarn=!isCrit&&p.daysSince>days;
     const dLabel=p.daysSince===null?'Never visited':`${p.daysSince} days ago`;
     const bClass=isCrit?'days-critical':isWarn?'days-warning':'days-ok';
     return`<div class="inactive-card${isCrit?' critical':isWarn?' warning':''}">
       <div style="flex:1">
-        <div style="font-size:14px;font-weight:600;margin-bottom:3px">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder due</span>':''}</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:3px"><span style="color:var(--text3);font-size:12px;font-weight:500;margin-right:6px">${idx+1}.</span>${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder due</span>':''}</div>
         <div style="font-size:11px;color:var(--text2)">${esc(p.city||'')}, ${esc(p.state)}</div>
         <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;font-size:11px">
           <div class="person-cell" style="gap:5px"><div class="av" style="width:18px;height:18px;background:${sp.bg};color:${sp.color};font-size:8px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div>
@@ -2038,7 +2046,7 @@ function renderPaymentReport(){
       </div>
     </div>
     <div class="metrics-row" id="pay-metrics"></div>
-    <div class="card"><div class="card-header">All collections</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Date</th><th>SP</th><th>Party</th><th>Mode</th><th>Amount</th><th>Ref</th><th>Notes</th></tr></thead><tbody id="pay-rows"></tbody></table></div></div>
+    <div class="card"><div class="card-header">All collections</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>Date</th><th>SP</th><th>Party</th><th>Mode</th><th>Amount</th><th>Ref</th><th>Notes</th></tr></thead><tbody id="pay-rows"></tbody></table></div></div>
   </div>`);
   refreshPayments();
 }
@@ -2052,10 +2060,10 @@ function refreshPayments(){
   const mc=(num,lbl,color='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${color}">${num}</div><div class="metric-lbl">${lbl}</div></div>`;
   document.getElementById('pay-metrics').innerHTML=mc(pays.length,'Collections')+mc(fmtMoney(total),'Total collected','var(--teal)')+mc(fmtMoney(byMode['Cheque']||0),'Cheque')+mc(fmtMoney((byMode['UPI']||0)+(byMode['NEFT / Bank Transfer']||0)),'UPI + NEFT');
   const mc2={Cheque:'var(--blue)',UPI:'var(--accent)','NEFT / Bank Transfer':'var(--teal)',Adjustment:'var(--amber)'};
-  document.getElementById('pay-rows').innerHTML=pays.sort((a,b)=>b.date.localeCompare(a.date)).map(p=>{
+  document.getElementById('pay-rows').innerHTML=pays.sort((a,b)=>b.date.localeCompare(a.date)).map((p,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;const party=PARTIES.find(x=>x.id===p.partyId)||{name:'?'};
-    return`<tr><td class="time-mono">${fmtDate(p.date)}</td><td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td style="font-weight:500">${esc(party.name)}</td><td><span style="font-size:11px;font-weight:600;color:${mc2[p.mode]||'var(--text2)'}">${esc(p.mode)}</span></td><td class="price-tag">${fmtMoney(p.amount)}</td><td class="time-mono">${esc(p.ref||'—')}</td><td style="font-size:11px;color:var(--text2)">${esc(p.notes||'—')}</td></tr>`;
-  }).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">No payments in this period</td></tr>';
+    return`<tr><td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td><td class="time-mono">${fmtDate(p.date)}</td><td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td style="font-weight:500">${esc(party.name)}</td><td><span style="font-size:11px;font-weight:600;color:${mc2[p.mode]||'var(--text2)'}">${esc(p.mode)}</span></td><td class="price-tag">${fmtMoney(p.amount)}</td><td class="time-mono">${esc(p.ref||'—')}</td><td style="font-size:11px;color:var(--text2)">${esc(p.notes||'—')}</td></tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text2)">No payments in this period</td></tr>';
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -2067,7 +2075,7 @@ function renderParties(){
   const pendingCount=PARTIES.filter(p=>p.source==='app'&&!p.approved).length;
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
-      <div><div class="admin-title">Party Master ${pendingCount>0?`<span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:12px;padding:3px 10px">${pendingCount} pending approval</span>`:''}</div><div class="admin-sub">${PARTIES.length} parties total</div></div>
+      <div><div class="admin-title">Party Master ${pendingCount>0?`<span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:12px;padding:3px 10px">${pendingCount} pending approval</span>`:''}</div><div class="admin-sub"><span id="pt-count">${PARTIES.length} parties total</span></div></div>
       <div class="filter-row">
         <select class="filter-select" id="pt-grade" onchange="refreshParties()"><option value="all">All grades</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option><option value="">No grade</option></select>
         <select class="filter-select" id="pt-state" onchange="refreshParties()"><option value="all">All states</option>${states.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
@@ -2077,7 +2085,7 @@ function renderParties(){
       </div>
     </div>
     <input class="search-bar" id="pt-search" placeholder="Search party name, contact, city..." oninput="refreshParties()">
-    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Party name</th><th>Grade</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
+    <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>Party name</th><th>Grade</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
   </div>`);
   refreshParties();
 }
@@ -2097,11 +2105,14 @@ function refreshParties(){
   });
   const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
   const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
-  document.getElementById('pt-rows').innerHTML=f.map(p=>{
+  const ptCountEl=document.getElementById('pt-count');
+  if(ptCountEl) ptCountEl.textContent=f.length===PARTIES.length?`${PARTIES.length} parties total`:`Showing ${f.length} of ${PARTIES.length} parties`;
+  document.getElementById('pt-rows').innerHTML=f.map((p,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;
     const isNewType=p.source==='app';
     const isPending=p.source==='app'&&!p.approved;
     return`<tr${isPending?' style="background:var(--amber-light)"':''}>
+      <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
       <td style="font-weight:600">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder</span>':''}${isPending?' <span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:9px;padding:1px 6px">⏳ Pending</span>':''}</td>
       <td>${p.grade?`<span class="badge" style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:11px;font-weight:600;padding:2px 10px">${esc(p.grade)}</span>`:'—'}</td>
       <td>${esc(p.contact||'—')}</td><td class="time-mono">${esc(p.phone||'—')}</td><td>${esc(p.city||'—')}</td>
@@ -2117,7 +2128,7 @@ function refreshParties(){
         <button class="icon-btn danger" onclick="deleteParty('${p.id}')">Del</button>
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
+  }).join('')||'<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
 }
 function openPartyModal(editId){
   if(!SALESPERSONS.length){showToast('Add salespersons first');return}
@@ -2161,9 +2172,10 @@ function openPartyDrawer(partyId){
   else outEl.style.display='none';
   const sorted=[...pv].sort((a,b)=>b.date.localeCompare(a.date));
   const dotC={order:'#1A5C3A',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990',active:'#378ADD'};
-  document.getElementById('drawer-history').innerHTML=!sorted.length?'<div style="padding:8px 0;font-size:12px;color:var(--text2)">No visits recorded yet.</div>':sorted.map(v=>{
+  document.getElementById('drawer-history').innerHTML=!sorted.length?'<div style="padding:8px 0;font-size:12px;color:var(--text2)">No visits recorded yet.</div>':sorted.map((v,idx)=>{
     const ov=orderValue(v);
     return`<div class="history-row">
+      <div style="font-size:11px;font-weight:500;color:var(--text3);min-width:20px;text-align:center">${idx+1}</div>
       <div class="history-dot" style="background:${dotC[v.status]||'#999'}"></div>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:500">${fmtDate(v.date)} <span class="badge badge-${v.status==='order'?'order':v.status==='noorder'?'noorder':'planned'}" style="font-size:10px;padding:2px 6px">${v.status}</span></div>
@@ -2188,7 +2200,7 @@ function renderPricelist(){
   const pls=pricelistsArr().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
-      <div><div class="admin-title">Product Master & Pricelists</div><div class="admin-sub">${PRODUCTS.length} products · ${pls.length} pricelists</div></div>
+      <div><div class="admin-title">Product Master & Pricelists</div><div class="admin-sub"><span id="pl-count">${PRODUCTS.length} products</span> · ${pls.length} pricelists</div></div>
       <div class="filter-row">
         <select class="filter-select" id="pl-cat" onchange="refreshPricelist()"><option value="all">All categories</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
         <button class="btn btn-green" onclick="openProductModal()">+ Add product</button>
@@ -2200,9 +2212,10 @@ function renderPricelist(){
     <!-- Pricelists management -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">Pricelists <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="openPricelistModal()">+ New pricelist</button></div>
-      <div id="pl-list-wrap">${pls.length?pls.map(pl=>{
+      <div id="pl-list-wrap">${pls.length?pls.map((pl,idx)=>{
         const prodCount=pl.prices?Object.keys(pl.prices).length:0;
         return`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;font-weight:500;color:var(--text3);min-width:20px;text-align:center">${idx+1}</span>
           <div style="flex:1">
             <div style="font-weight:600;font-size:13px">${esc(pl.name)}</div>
             <div style="font-size:11px;color:var(--text2)">${fmtDate(pl.date)} · ${prodCount} products with custom prices</div>
@@ -2215,14 +2228,17 @@ function renderPricelist(){
     </div>
 
     <!-- Product master table -->
-    <div class="card"><div class="card-header">Product master (base prices)</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>Base price</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
+    <div class="card"><div class="card-header">Product master (base prices)</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>Base price</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
   </div>`);
   refreshPricelist();
 }
 function refreshPricelist(){
   const catF=document.getElementById('pl-cat')?.value||'all';const q=(document.getElementById('pl-search')?.value||'').toLowerCase();
   let f=PRODUCTS.filter(p=>{if(catF!=='all'&&p.category!==catF)return false;if(q&&!p.name.toLowerCase().includes(q)&&!p.code.toLowerCase().includes(q))return false;return true;});
-  document.getElementById('pl-rows').innerHTML=f.map(p=>`<tr>
+  const plCountEl=document.getElementById('pl-count');
+  if(plCountEl) plCountEl.textContent=f.length===PRODUCTS.length?`${PRODUCTS.length} products`:`Showing ${f.length} of ${PRODUCTS.length} products`;
+  document.getElementById('pl-rows').innerHTML=f.map((p,idx)=>`<tr>
+    <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
     <td style="font-family:var(--mono);font-size:12px">${esc(p.code)}</td>
     <td style="font-weight:600">${esc(p.name)}</td>
     <td><span class="badge badge-state" style="font-size:10px">${esc(p.category)}</span></td>
@@ -2230,7 +2246,7 @@ function refreshPricelist(){
     <td>${p.sizes?p.sizes.split(',').map(s=>`<span class="size-badge">${esc(s.trim())}</span>`).join(''):'—'}</td>
     <td class="price-tag">${fmtMoney(p.price)}</td>
     <td style="display:flex;gap:4px"><button class="icon-btn" onclick="openProductModal('${p.id}')">Edit</button><button class="icon-btn danger" onclick="deleteProduct('${p.id}')">Del</button></td>
-  </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">No products yet. Add products above.</td></tr>';
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text2)">No products yet. Add products above.</td></tr>';
 }
 function openProductModal(editId){
   document.getElementById('prod-modal-title').textContent=editId?'Edit product':'Add product';document.getElementById('prod-edit-id').value=editId||'';
@@ -2283,12 +2299,14 @@ function openPricelistEditor(plId){
   const pl=PRICELISTS[plId];if(!pl)return;
   const prices=pl.prices||{};
   const cats=[...new Set(PRODUCTS.map(p=>p.category))];
-  let rows='';
+  let rows='';let plEdSlNo=0;
   cats.forEach(cat=>{
     rows+=`<div class="op-cat">${esc(cat)}</div>`;
     PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      plEdSlNo++;
       const customPrice=prices[p.id]!==undefined?prices[p.id]:'';
-      rows+=`<div class="op-row" style="grid-template-columns:1fr 80px 90px">
+      rows+=`<div class="op-row" style="grid-template-columns:30px 1fr 80px 90px">
+        <div style="font-size:11px;color:var(--text3);text-align:center;font-weight:500">${plEdSlNo}</div>
         <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)}</div></div>
         <div class="price-tag" style="font-size:11px">Base: ${fmtMoney(p.price)}</div>
         <input type="number" class="qty-input" style="width:80px" id="plp-${p.id}" value="${customPrice}" placeholder="${p.price}" min="0" step="0.01">
@@ -2299,7 +2317,7 @@ function openPricelistEditor(plId){
     <div class="modal-title">Edit prices — ${esc(pl.name)}</div>
     <div class="modal-sub">${fmtDate(pl.date)} · Leave blank to use base price</div>
     <div class="order-picker" style="max-height:400px;overflow-y:auto">
-      <div class="op-header" style="grid-template-columns:1fr 80px 90px"><span>Product</span><span>Base</span><span>Custom</span></div>
+      <div class="op-header" style="grid-template-columns:30px 1fr 80px 90px"><span>Sl</span><span>Product</span><span>Base</span><span>Custom</span></div>
       ${rows}
     </div>
     <button class="btn btn-green btn-full" style="margin-top:12px" onclick="savePricelistPrices('${plId}')">Save prices</button>
@@ -2410,7 +2428,8 @@ function renderSettingsView(){
 
 function buildSPListHTML(){
   if(!SALESPERSONS.length)return'<div style="padding:16px;font-size:13px;color:var(--text2)">No salespersons added yet.</div>';
-  return SALESPERSONS.map(sp=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+  return SALESPERSONS.map((sp,idx)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+    <span style="font-size:12px;font-weight:500;color:var(--text3);min-width:20px;text-align:center">${idx+1}</span>
     <div class="av" style="width:36px;height:36px;background:${sp.bg};color:${sp.color};font-size:13px">${esc(sp.initials)}</div>
     <div style="flex:1"><div style="font-weight:500">${esc(sp.name)}</div><div style="font-size:11px;color:var(--text2)">${PARTIES.filter(p=>p.spId===sp.id).length} parties · PIN set</div></div>
     <button class="icon-btn" onclick="openEditSPModal('${sp.id}')">Edit</button>
