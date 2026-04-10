@@ -484,22 +484,21 @@ input,textarea,select{font-family:var(--font)}
 </div>
 </div>
 
-<!-- ADD VISIT -->
+<!-- ADD VISIT / PLAN (multi-party, no time field) -->
 <div class="modal-overlay" id="add-visit-modal">
-<div class="modal">
+<div class="modal modal-wide">
   <div class="modal-handle"></div>
-  <div class="modal-title">Add visit to plan</div>
-  <div class="modal-sub">Schedule a customer visit</div>
-  <label class="form-label">Party</label>
-  <select class="form-input" id="av-party" onchange="showPartyInfo(this.value)"></select>
-  <div id="av-party-info" style="display:none;margin:-8px 0 12px;padding:8px 12px;background:var(--blue-light);border-radius:8px;font-size:12px;color:var(--blue)"></div>
-  <div class="form-row">
-    <div><label class="form-label">Time</label><input type="time" class="form-input" id="av-time"></div>
-    <div><label class="form-label">Date</label><input type="date" class="form-input" id="av-date"></div>
+  <div class="modal-title">Plan visits</div>
+  <div class="modal-sub">Select parties and date — one planned visit per party</div>
+  <label class="form-label">Date</label>
+  <input type="date" class="form-input" id="av-date" onchange="buildAvPartyList(_avParties)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+    <label class="form-label" style="margin:0">Select parties <span id="av-selected-count" style="color:var(--accent);font-weight:600"></span></label>
+    <button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="avToggleAll()">Select all</button>
   </div>
-  <label class="form-label">Notes (optional)</label>
-  <input type="text" class="form-input" id="av-notes" placeholder="Purpose of visit...">
-  <button class="btn btn-green btn-full" onclick="submitAddVisit()">Add to plan</button>
+  <input type="text" class="search-bar" id="av-party-search" placeholder="Search by name, city or state..." oninput="filterAvParties()" style="margin-bottom:8px">
+  <div id="av-party-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)"></div>
+  <button class="btn btn-green btn-full" style="margin-top:14px" onclick="submitAddVisit()">Add to plan</button>
   <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('add-visit-modal')">Cancel</button>
 </div>
 </div>
@@ -1314,29 +1313,93 @@ async function submitResched(){
   closeModal('resched-modal');showToast('Rescheduled');
 }
 
+/* -- Multi-party planning modal -- */
+let _avParties=[];
+
 function openAddVisitModal(){
   const myParties=PARTIES.filter(p=>p.spId===currentSP.id);
-  if(!myParties.length){showToast('No parties assigned to you — ask admin to add parties');return}
-  const sel=document.getElementById('av-party');
-  sel.innerHTML='<option value="">Select party...</option>';
-  myParties.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+(p.grade?' ['+p.grade+']':'')+(p.city?' ('+p.city+')':'');sel.appendChild(o);});
-  document.getElementById('av-time').value='';document.getElementById('av-notes').value='';document.getElementById('av-date').value=today();
-  document.getElementById('av-party-info').style.display='none';
+  if(!myParties.length){showToast('No parties assigned to you \u2014 ask admin to add parties');return}
+  _avParties=myParties;
+  const dateEl=document.getElementById('av-date');
+  if(dateEl) dateEl.value=today();
+  const searchEl=document.getElementById('av-party-search');
+  if(searchEl) searchEl.value='';
+  buildAvPartyList(myParties);
   openModal('add-visit-modal');
 }
-function showPartyInfo(partyId){
-  const party=PARTIES.find(p=>p.id===partyId);
-  const info=document.getElementById('av-party-info');
-  if(party){info.style.display='block';info.innerHTML=`${party.grade?'<span style="font-weight:600">Grade '+esc(party.grade)+'</span> · ':''}${party.contact?'👤 '+esc(party.contact)+' · ':''}📞 ${esc(party.phone||'—')} · ${esc(party.city)}, ${esc(party.state)}${party.outstanding>0?' · <span style="color:var(--red)">⚠ Due: '+fmtMoney(party.outstanding)+'</span>':''}`;}
-  else info.style.display='none';
+
+function buildAvPartyList(parties){
+  const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
+  const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
+  const planDate=(document.getElementById('av-date')?.value)||today();
+  const alreadyPlanned=new Set(
+    visitsArr().filter(v=>v.spId===currentSP.id&&v.date===planDate&&v.status==='planned').map(v=>v.partyId)
+  );
+  const wrap=document.getElementById('av-party-list');
+  if(!wrap) return;
+  if(!parties.length){
+    wrap.innerHTML='<div style="padding:16px;text-align:center;color:var(--text2);font-size:13px">No parties found</div>';
+    updAvCount();return;
+  }
+  wrap.innerHTML=parties.map(p=>{
+    const isPlanned=alreadyPlanned.has(p.id);
+    const gradeHtml=p.grade?` <span style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600">${esc(p.grade)}</span>`:'';
+    const dueHtml=p.outstanding>0?` &nbsp;\u00b7&nbsp; <span style="color:var(--red)">\u26a0 Due: ${fmtMoney(p.outstanding)}</span>`:'';
+    const plannedNote=isPlanned?' <span style="font-size:10px;color:var(--text2);font-weight:400">(already planned)</span>':'';
+    return`<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:${isPlanned?'default':'pointer'};background:${isPlanned?'var(--surface2)':'var(--surface)'}">
+      <input type="checkbox" class="av-party-cb" value="${p.id}" ${isPlanned?'disabled':''} onchange="updAvCount()" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500">${esc(p.name)}${gradeHtml}${plannedNote}</div>
+        <div style="font-size:11px;color:var(--text2)">${esc(p.city||'')}${p.city&&p.state?', ':''}${esc(p.state||'')}${dueHtml}</div>
+      </div>
+    </label>`;
+  }).join('');
+  updAvCount();
+}
+
+function filterAvParties(){
+  const q=(document.getElementById('av-party-search')?.value||'').toLowerCase();
+  const filtered=q
+    ?_avParties.filter(p=>
+        p.name.toLowerCase().includes(q)||
+        (p.city||'').toLowerCase().includes(q)||
+        (p.state||'').toLowerCase().includes(q))
+    :_avParties;
+  buildAvPartyList(filtered);
+}
+
+function updAvCount(){
+  const checked=[...document.querySelectorAll('.av-party-cb:checked:not(:disabled)')];
+  const el=document.getElementById('av-selected-count');
+  if(el) el.textContent=checked.length?`(${checked.length} selected)`:'';
+}
+
+function avToggleAll(){
+  const cbs=[...document.querySelectorAll('.av-party-cb:not(:disabled)')];
+  const allChecked=cbs.length>0&&cbs.every(cb=>cb.checked);
+  cbs.forEach(cb=>{cb.checked=!allChecked;});
+  updAvCount();
 }
 async function submitAddVisit(){
-  const partyId=document.getElementById('av-party').value;if(!partyId){showToast('Please select a party');return}
-  const newId=uid();
+  const checkedBoxes=[...document.querySelectorAll('.av-party-cb:checked:not(:disabled)')];
+  if(!checkedBoxes.length){showToast('Please select at least one party');return}
+  const date=document.getElementById('av-date').value||today();
   setSyncStatus('wait','Saving...');
-  await SET(REF('visits/'+newId),{id:newId,spId:currentSP.id,partyId,plannedTime:document.getElementById('av-time').value,date:document.getElementById('av-date').value||today(),status:'planned',checkIn:null,checkOut:null,feedback:document.getElementById('av-notes').value,nextVisit:'',orderItems:[],payment:null,gps:{x:15+Math.random()*70,y:15+Math.random()*70}});
+  const updates={};
+  checkedBoxes.forEach(cb=>{
+    const newId=uid();
+    updates['visits/'+newId]={
+      id:newId,spId:currentSP.id,partyId:cb.value,
+      plannedTime:'',date,status:'planned',
+      checkIn:null,checkOut:null,feedback:'',nextVisit:'',
+      orderItems:[],payment:null,
+      gps:{x:15+Math.random()*70,y:15+Math.random()*70}
+    };
+  });
+  await UPDATE(REF('/'),updates);
   setSyncStatus('ok','Live');
-  closeModal('add-visit-modal');showToast('Visit added');
+  closeModal('add-visit-modal');
+  showToast(checkedBoxes.length===1?'1 visit added to plan':`${checkedBoxes.length} visits added to plan`);
 }
 
 /* ── NEW PARTY VISIT (SP creates party + checks in immediately) ── */
