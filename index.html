@@ -445,41 +445,41 @@ input,textarea,select{font-family:var(--font)}
   <div class="modal-handle"></div>
   <div class="modal-title" id="co-title">Check out</div>
   <div class="modal-sub" id="co-sub"></div>
-  <div class="gps-indicator" id="co-gps-indicator"><div class="pulse-dot"></div> GPS location captured at check-in</div>
-  <label class="form-label">Visit outcome</label>
+  <div class="gps-indicator" id="co-gps-indicator"><div class="pulse-dot"></div> <span data-t="GPS location captured at check-in">GPS location captured at check-in</span></div>
+  <label class="form-label" data-t="Visit outcome">Visit outcome</label>
   <div class="status-pills">
-    <button class="status-pill" onclick="selStatus('order',this)">Order received</button>
-    <button class="status-pill" onclick="selStatus('noorder',this)">No order</button>
-    <button class="status-pill" onclick="selStatus('rescheduled',this)">Reschedule</button>
-    <button class="status-pill" onclick="selStatus('feedback',this)">Follow-up needed</button>
+    <button class="status-pill" onclick="selStatus('order',this)" data-t="Order received">Order received</button>
+    <button class="status-pill" onclick="selStatus('noorder',this)" data-t="No order">No order</button>
+    <button class="status-pill" onclick="selStatus('rescheduled',this)" data-t="Reschedule">Reschedule</button>
+    <button class="status-pill" onclick="selStatus('feedback',this)" data-t="Follow-up needed">Follow-up needed</button>
   </div>
   <div id="order-picker-section" style="display:none">
-    <label class="form-label">Order items</label>
+    <label class="form-label" data-t="Order items">Order items</label>
     <div id="order-picker-wrap"></div>
   </div>
   <div class="pay-section">
-    <div class="pay-section-title">Payment collected? (optional)</div>
+    <div class="pay-section-title" data-t="Payment collected? (optional)">Payment collected? (optional)</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <button class="pay-pill" onclick="togglePay(this,'Cheque')">Cheque</button>
-      <button class="pay-pill" onclick="togglePay(this,'NEFT / Bank Transfer')">NEFT / Transfer</button>
-      <button class="pay-pill" onclick="togglePay(this,'UPI')">UPI</button>
-      <button class="pay-pill" onclick="togglePay(this,'Adjustment')">Adjustment</button>
+      <button class="pay-pill" onclick="togglePay(this,'Cheque')" data-t="Cheque">Cheque</button>
+      <button class="pay-pill" onclick="togglePay(this,'NEFT / Bank Transfer')" data-t="NEFT / Transfer">NEFT / Transfer</button>
+      <button class="pay-pill" onclick="togglePay(this,'UPI')" data-t="UPI">UPI</button>
+      <button class="pay-pill" onclick="togglePay(this,'Adjustment')" data-t="Adjustment">Adjustment</button>
     </div>
     <div id="pay-fields" style="display:none">
       <div class="form-row">
-        <div><label class="form-label">Amount (₹)</label><input type="number" class="form-input" id="co-pay-amount" min="1" placeholder="0" oninput="updPayBalance()"></div>
-        <div><label class="form-label">Ref / Cheque no.</label><input type="text" class="form-input" id="co-pay-ref" placeholder="Reference"></div>
+        <div><label class="form-label" data-t="Amount (₹)">Amount (₹)</label><input type="number" class="form-input" id="co-pay-amount" min="1" placeholder="0" oninput="updPayBalance()"></div>
+        <div><label class="form-label" data-t="Ref / Cheque no.">Ref / Cheque no.</label><input type="text" class="form-input" id="co-pay-ref" placeholder="Reference"></div>
       </div>
-      <label class="form-label">Notes</label>
-      <input type="text" class="form-input" id="co-pay-notes" placeholder="e.g. Cheque dated...">
+      <label class="form-label" data-t="Notes">Notes</label>
+      <input type="text" class="form-input" id="co-pay-notes" placeholder="e.g. Cheque dated..." data-t-ph="e.g. Cheque dated...">
     </div>
   </div>
-  <label class="form-label">Feedback / notes</label>
-  <textarea class="form-input" style="resize:vertical;min-height:60px" id="co-feedback" placeholder="What happened..."></textarea>
-  <div id="co-next-date-row"><label class="form-label">Next visit date</label><input type="date" class="form-input" id="co-nextdate"></div>
-  <div id="co-resched-date-row" style="display:none"><label class="form-label">Reschedule to</label><input type="date" class="form-input" id="co-rescheddate"></div>
-  <button class="btn btn-green btn-full" onclick="submitCheckout()">Submit & Check Out</button>
-  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('checkout-modal')">Cancel</button>
+  <label class="form-label" data-t="Feedback / notes">Feedback / notes</label>
+  <textarea class="form-input" style="resize:vertical;min-height:60px" id="co-feedback" placeholder="What happened..." data-t-ph="What happened..."></textarea>
+  <div id="co-next-date-row"><label class="form-label" data-t="Next visit date">Next visit date</label><input type="date" class="form-input" id="co-nextdate"></div>
+  <div id="co-resched-date-row" style="display:none"><label class="form-label" data-t="Reschedule to">Reschedule to</label><input type="date" class="form-input" id="co-rescheddate"></div>
+  <button class="btn btn-green btn-full" onclick="submitCheckout()" data-t="Submit & Check Out">Submit & Check Out</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('checkout-modal')" data-t="Cancel">Cancel</button>
   <input type="hidden" id="co-visit-id">
 </div>
 </div>
@@ -488,18 +488,18 @@ input,textarea,select{font-family:var(--font)}
 <div class="modal-overlay" id="add-visit-modal">
 <div class="modal modal-wide">
   <div class="modal-handle"></div>
-  <div class="modal-title">Plan visits</div>
-  <div class="modal-sub">Select parties and date — one planned visit per party</div>
-  <label class="form-label">Date</label>
+  <div class="modal-title" data-t="Plan visits">Plan visits</div>
+  <div class="modal-sub" data-t="Select parties and date — one planned visit per party">Select parties and date — one planned visit per party</div>
+  <label class="form-label" data-t="Date">Date</label>
   <input type="date" class="form-input" id="av-date" onchange="buildAvPartyList(_avParties)">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-    <label class="form-label" style="margin:0">Select parties <span id="av-selected-count" style="color:var(--accent);font-weight:600"></span></label>
-    <button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="avToggleAll()">Select all</button>
+    <label class="form-label" data-t="Select parties" style="margin:0">Select parties <span id="av-selected-count" style="color:var(--accent);font-weight:600"></span></label>
+    <button class="btn btn-outline" style="font-size:11px;padding:3px 10px" onclick="avToggleAll()" data-t="Select all">Select all</button>
   </div>
-  <input type="text" class="search-bar" id="av-party-search" placeholder="Search by name, city or state..." oninput="filterAvParties()" style="margin-bottom:8px">
+  <input type="text" class="search-bar" id="av-party-search" placeholder="Search by name, city or state..." oninput="filterAvParties()" style="margin-bottom:8px" data-t-ph="Search by name, city or state...">
   <div id="av-party-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)"></div>
-  <button class="btn btn-green btn-full" style="margin-top:14px" onclick="submitAddVisit()">Add to plan</button>
-  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('add-visit-modal')">Cancel</button>
+  <button class="btn btn-green btn-full" style="margin-top:14px" onclick="submitAddVisit()" data-t="Add to plan">Add to plan</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('add-visit-modal')" data-t="Cancel">Cancel</button>
 </div>
 </div>
 
@@ -507,16 +507,16 @@ input,textarea,select{font-family:var(--font)}
 <div class="modal-overlay" id="resched-modal">
 <div class="modal">
   <div class="modal-handle"></div>
-  <div class="modal-title" id="rs-title">Reschedule visit</div>
+  <div class="modal-title" id="rs-title" data-t-default="Reschedule visit">Reschedule visit</div>
   <div class="modal-sub" id="rs-sub"></div>
   <div class="form-row">
-    <div><label class="form-label">New date</label><input type="date" class="form-input" id="rs-date"></div>
-    <div><label class="form-label">New time</label><input type="time" class="form-input" id="rs-time"></div>
+    <div><label class="form-label" data-t="New date">New date</label><input type="date" class="form-input" id="rs-date"></div>
+    <div><label class="form-label" data-t="New time">New time</label><input type="time" class="form-input" id="rs-time"></div>
   </div>
-  <label class="form-label">Reason</label>
-  <input type="text" class="form-input" id="rs-reason" placeholder="Why rescheduling?">
-  <button class="btn btn-amber btn-full" onclick="submitResched()">Confirm reschedule</button>
-  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('resched-modal')">Cancel</button>
+  <label class="form-label" data-t="Reason">Reason</label>
+  <input type="text" class="form-input" id="rs-reason" placeholder="Why rescheduling?" data-t-ph="Why rescheduling?">
+  <button class="btn btn-amber btn-full" onclick="submitResched()" data-t="Confirm reschedule">Confirm reschedule</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('resched-modal')" data-t="Cancel">Cancel</button>
   <input type="hidden" id="rs-visit-id">
 </div>
 </div>
@@ -723,17 +723,17 @@ input,textarea,select{font-family:var(--font)}
 <div class="modal-overlay" id="new-party-visit-modal">
 <div class="modal">
   <div class="modal-handle"></div>
-  <div class="modal-title">New party visit</div>
-  <div class="modal-sub">Add a new party and check in immediately</div>
-  <label class="form-label">Party / Firm name *</label>
-  <input type="text" class="form-input" id="npv-name" placeholder="Full firm name">
+  <div class="modal-title" data-t="New party visit">New party visit</div>
+  <div class="modal-sub" data-t="Add a new party and check in immediately">Add a new party and check in immediately</div>
+  <label class="form-label" data-t="Party / Firm name *">Party / Firm name *</label>
+  <input type="text" class="form-input" id="npv-name" placeholder="Full firm name" data-t-ph="Full firm name">
   <div class="form-row">
-    <div><label class="form-label">City / Area *</label><input type="text" class="form-input" id="npv-city" placeholder="City or area"></div>
-    <div><label class="form-label">Phone</label><input type="text" class="form-input" id="npv-phone" placeholder="Phone number" inputmode="tel"></div>
+    <div><label class="form-label" data-t="City / Area *">City / Area *</label><input type="text" class="form-input" id="npv-city" placeholder="City or area" data-t-ph="City or area"></div>
+    <div><label class="form-label" data-t="Phone">Phone</label><input type="text" class="form-input" id="npv-phone" placeholder="Phone number" inputmode="tel" data-t-ph="Phone number"></div>
   </div>
-  <div class="gps-indicator"><div class="pulse-dot"></div> GPS will be captured on check-in</div>
-  <button class="btn btn-green btn-full" onclick="submitNewPartyVisit()">Create party & Check in</button>
-  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('new-party-visit-modal')">Cancel</button>
+  <div class="gps-indicator"><div class="pulse-dot"></div> <span data-t="GPS will be captured on check-in">GPS will be captured on check-in</span></div>
+  <button class="btn btn-green btn-full" onclick="submitNewPartyVisit()" data-t="Create party & Check in">Create party & Check in</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('new-party-visit-modal')" data-t="Cancel">Cancel</button>
 </div>
 </div>
 
@@ -762,6 +762,136 @@ let DB=null, REF=null, SET=null, GET=null, ON=null, PUSH=null, UPDATE=null, REMO
 let ADMIN_PWD='craze2024';
 let currentRole=null; // 'admin' | 'sp'
 let currentSP=null;   // {id, name, initials, color, bg}
+
+/* ── HINDI TRANSLATION SYSTEM ──
+   Only activates when currentSP.language === 'hi'
+   To enable for a specific SP: set language:"hi" in Firebase
+   under salespersons/<id>/language
+*/
+const HI={
+  // Mobile view
+  'Logged in as':'लॉग इन किया है',
+  'Good day,':'नमस्ते,',
+  'Today\'s visits':'आज की विज़िट',
+  'No visits planned today.':'आज कोई विज़िट नहीं है।',
+  'Planned':'योजनाबद्ध',
+  'Done':'पूरा',
+  'Orders':'ऑर्डर',
+  'Add visit to plan':'विज़िट जोड़ें',
+  'New party visit':'नई पार्टी विज़िट',
+  'WhatsApp day summary':'WhatsApp दिन सारांश',
+  'On tour:':'टूर पर:',
+  'Submit expenses':'खर्च जमा करें',
+  'Expenses: Pending approval':'खर्च: अनुमोदन बाकी',
+  '✓ Expenses approved':'✓ खर्च स्वीकृत',
+  // Visit card statuses
+  'planned':'योजनाबद्ध',
+  'active':'चेक इन',
+  'order':'ऑर्डर',
+  'noorder':'ऑर्डर नहीं',
+  'rescheduled':'पुनः निर्धारित',
+  'feedback':'फॉलो-अप',
+  // Visit card text
+  'In since':'चेक इन:',
+  'GPS marked':'GPS चिह्नित',
+  'Rescheduled':'पुनः निर्धारित',
+  'Order:':'ऑर्डर:',
+  'New':'नया',
+  // Action buttons
+  'Check In':'चेक इन',
+  'Reschedule':'पुनः निर्धारित करें',
+  'Check Out + Feedback':'चेक आउट + फीडबैक',
+  // Checkout modal
+  'Check out':'चेक आउट',
+  'Checked in at':'चेक इन हुआ:',
+  'GPS location captured at check-in':'चेक-इन पर GPS दर्ज हुआ',
+  'Visit outcome':'विज़िट परिणाम',
+  'Order received':'ऑर्डर मिला',
+  'No order':'ऑर्डर नहीं',
+  'Follow-up needed':'फॉलो-अप जरूरी',
+  'Reschedule to':'पुनः निर्धारित करें',
+  'Order items':'ऑर्डर आइटम',
+  'Payment collected? (optional)':'भुगतान मिला? (वैकल्पिक)',
+  'Cheque':'चेक',
+  'NEFT / Transfer':'NEFT / ट्रांसफर',
+  'UPI':'UPI',
+  'Adjustment':'समायोजन',
+  'Amount (₹)':'राशि (₹)',
+  'Ref / Cheque no.':'संदर्भ / चेक नं.',
+  'Notes':'नोट्स',
+  'e.g. Cheque dated...':'जैसे चेक दिनांक...',
+  'Feedback / notes':'फीडबैक / नोट्स',
+  'What happened...':'क्या हुआ...',
+  'Next visit date':'अगली विज़िट तारीख',
+  'Submit & Check Out':'जमा करें और चेक आउट करें',
+  'Cancel':'रद्द करें',
+  // Reschedule modal
+  'Reschedule visit':'विज़िट पुनः निर्धारित करें',
+  'New date':'नई तारीख',
+  'New time':'नया समय',
+  'Reason':'कारण',
+  'Why rescheduling?':'क्यों पुनः निर्धारित कर रहे हैं?',
+  'Confirm reschedule':'पुनः निर्धारित करें',
+  // Plan visits modal
+  'Plan visits':'विज़िट योजना',
+  'Select parties and date — one planned visit per party':'पार्टी और तारीख चुनें',
+  'Date':'तारीख',
+  'Select parties':'पार्टी चुनें',
+  'Select all':'सभी चुनें',
+  'Search by name, city or state...':'नाम, शहर या राज्य से खोजें...',
+  'Add to plan':'योजना में जोड़ें',
+  '(already planned)':'(पहले से योजनाबद्ध)',
+  // New party modal
+  'New party visit':'नई पार्टी विज़िट',
+  'Party name *':'पार्टी का नाम *',
+  'e.g. Sharma Traders':'जैसे शर्मा ट्रेडर्स',
+  'City *':'शहर *',
+  'e.g. Jaipur':'जैसे जयपुर',
+  'Phone (optional)':'फोन (वैकल्पिक)',
+  'GPS will be captured on check-in':'चेक-इन पर GPS दर्ज होगा',
+  'Create party & Check in':'पार्टी बनाएं और चेक इन करें',
+  // Toasts
+  'Getting your location...':'आपकी लोकेशन मिल रही है...',
+  'GPS unavailable — check-in recorded without location':'GPS उपलब्ध नहीं — बिना लोकेशन के चेक-इन दर्ज हुआ',
+  'Please select visit outcome':'विज़िट परिणाम चुनें',
+  'Enter a valid payment amount':'सही भुगतान राशि दर्ज करें',
+  'Checked out · Visit recorded':'चेक आउट · विज़िट दर्ज हुई',
+  'Rescheduled':'पुनः निर्धारित हुआ',
+  'No parties assigned to you — ask admin to add parties':'आपको कोई पार्टी नहीं दी गई — एडमिन से संपर्क करें',
+  'Please select at least one party':'कम से कम एक पार्टी चुनें',
+  'Party name is required':'पार्टी का नाम जरूरी है',
+  'City is required':'शहर जरूरी है',
+  'GPS unavailable — continuing without location':'GPS उपलब्ध नहीं — बिना लोकेशन के जारी है',
+  'Party created & checked in':'पार्टी बनाई और चेक इन हुए',
+  'Failed:':'विफल:',
+  'Add a new party and check in immediately':'नई पार्टी जोड़ें और तुरंत चेक इन करें',
+  'Party / Firm name *':'पार्टी / फर्म का नाम *',
+  'Full firm name':'पूरा फर्म नाम',
+  'City / Area *':'शहर / क्षेत्र *',
+  'City or area':'शहर या क्षेत्र',
+  'Phone':'फोन',
+  'Phone number':'फोन नंबर',
+  '1 visit added to plan':'1 विज़िट योजना में जोड़ी',
+  // Pricelist
+  'Base prices':'आधार मूल्य',
+  'Pricelist:':'मूल्य सूची:',
+  'Order total':'ऑर्डर कुल',
+  'No products in master. Admin needs to add products first.':'कोई उत्पाद नहीं है। एडमिन से उत्पाद जोड़ने के लिए कहें।',
+};
+
+/* Helper — returns translated text if current SP is Hindi */
+function t(str){
+  if(!currentSP||currentSP.language!=='hi')return str;
+  return HI[str]||str;
+}
+/* Helper — translate dynamic strings with values */
+function td(template,...vals){
+  if(!currentSP||currentSP.language!=='hi')return template.replace(/{(\d+)}/g,(_,i)=>vals[i]);
+  // translate the template key first, then insert values
+  const base=HI[template]||template;
+  return base.replace(/{(\d+)}/g,(_,i)=>vals[i]);
+}
+function isHindi(){return currentSP&&currentSP.language==='hi';}
 let _listeners=[];
 
 /* ── IN-MEMORY CACHE (synced from Firebase) ── */
@@ -927,11 +1057,30 @@ function doLogout(){
   document.getElementById('nav-tabs-wrap').innerHTML='';
 }
 
+/* ── UI TRANSLATION (Hindi) ── */
+function translateUI(){
+  if(!currentSP||currentSP.language!=='hi')return;
+  // Translate all elements with data-t attribute (textContent)
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const key=el.getAttribute('data-t');
+    if(HI[key])el.textContent=HI[key];
+  });
+  // Translate placeholder text
+  document.querySelectorAll('[data-t-ph]').forEach(el=>{
+    const key=el.getAttribute('data-t-ph');
+    if(HI[key])el.placeholder=HI[key];
+  });
+  // Nav tab "My Visits"
+  const navTab=document.querySelector('#nav-tabs-wrap .nav-tab');
+  if(navTab)navTab.textContent='मेरी विज़िट';
+}
+
 /* ── APP BOOT ── */
 function bootApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
   buildNav();
+  translateUI();
   subscribeData();
 }
 
@@ -1048,23 +1197,23 @@ function renderMobileView(){
   let tourBanner='';
   if(activeTour){
     tourBanner=`<div style="background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--r-lg);padding:11px 14px;margin-bottom:12px;font-size:12px;color:var(--teal)">
-      <strong>On tour:</strong> ${esc(activeTour.area)} · ${fmtDate(activeTour.fromDate)} – ${fmtDate(activeTour.toDate)}
-      ${activeTour.status==='active'||activeTour.status==='draft'?`<button class="btn btn-teal" style="font-size:11px;padding:3px 10px;margin-left:8px" onclick="openExpenseModal('${activeTour.id}')">Submit expenses</button>`:''}
-      ${activeTour.status==='pending'?'<span style="margin-left:8px;font-weight:500">Expenses: Pending approval</span>':''}
-      ${activeTour.status==='approved'?'<span style="margin-left:8px;color:var(--accent);font-weight:500">✓ Expenses approved</span>':''}
+      <strong>${t('On tour:')}</strong> ${esc(activeTour.area)} · ${fmtDate(activeTour.fromDate)} – ${fmtDate(activeTour.toDate)}
+      ${activeTour.status==='active'||activeTour.status==='draft'?`<button class="btn btn-teal" style="font-size:11px;padding:3px 10px;margin-left:8px" onclick="openExpenseModal('${activeTour.id}')">${t('Submit expenses')}</button>`:''}
+      ${activeTour.status==='pending'?`<span style="margin-left:8px;font-weight:500">${t('Expenses: Pending approval')}</span>`:''}
+      ${activeTour.status==='approved'?`<span style="margin-left:8px;color:var(--accent);font-weight:500">${t('✓ Expenses approved')}</span>`:''}
     </div>`;
   }
 
   let cards='';
   if(!myVisits.length){
-    cards='<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No visits planned today.</div>';
+    cards=`<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">${t('No visits planned today.')}</div>`;
   } else {
     cards=myVisits.map(v=>buildVisitCardHTML(v)).join('');
   }
 
   const html=`<div class="mobile-shell">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 12px;margin-bottom:12px;box-shadow:var(--shadow)">
-      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Logged in as</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${t('Logged in as')}</div>
       <div style="display:flex;align-items:center;gap:8px">
         <div class="av" style="width:32px;height:32px;background:${currentSP.bg};color:${currentSP.color};font-size:12px">${esc(currentSP.initials)}</div>
         <span style="font-size:14px;font-weight:600">${esc(currentSP.name)}</span>
@@ -1073,28 +1222,28 @@ function renderMobileView(){
     ${tourBanner}
     <div class="day-header">
       <div class="day-header-top">
-        <div class="greeting">Good day, ${esc(currentSP.name.split(' ')[0])}</div>
-        <div class="date-badge">${new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'})}</div>
+        <div class="greeting">${t('Good day,')} ${esc(currentSP.name.split(' ')[0])}</div>
+        <div class="date-badge">${new Date().toLocaleDateString(isHindi()?'hi-IN':'en-IN',{weekday:'short',day:'numeric',month:'short'})}</div>
       </div>
       <div class="day-stats">
-        <div class="day-stat"><div class="day-stat-num">${myVisits.length}</div><div class="day-stat-lbl">Planned</div></div>
-        <div class="day-stat"><div class="day-stat-num">${done}</div><div class="day-stat-lbl">Done</div></div>
-        <div class="day-stat"><div class="day-stat-num" style="color:var(--accent)">${orders}</div><div class="day-stat-lbl">Orders</div></div>
+        <div class="day-stat"><div class="day-stat-num">${myVisits.length}</div><div class="day-stat-lbl">${t('Planned')}</div></div>
+        <div class="day-stat"><div class="day-stat-num">${done}</div><div class="day-stat-lbl">${t('Done')}</div></div>
+        <div class="day-stat"><div class="day-stat-num" style="color:var(--accent)">${orders}</div><div class="day-stat-lbl">${t('Orders')}</div></div>
       </div>
     </div>
-    <div class="section-title">Today's visits</div>
+    <div class="section-title">${t("Today's visits")}</div>
     ${cards}
     <button class="add-btn" onclick="openAddVisitModal()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      Add visit to plan
+      ${t('Add visit to plan')}
     </button>
     <button class="add-btn" style="border-color:var(--teal);color:var(--teal)" onclick="openNewPartyVisitModal()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      New party visit
+      ${t('New party visit')}
     </button>
     <button class="add-btn wa" onclick="openWASummary()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 13A6 6 0 107 1a6 6 0 000 12z" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3L9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      WhatsApp day summary
+      ${t('WhatsApp day summary')}
     </button>
   </div>`;
 
@@ -1110,12 +1259,12 @@ function buildVisitCardHTML(v){
   const bm={planned:'badge-planned',active:'badge-active',order:'badge-order',noorder:'badge-noorder',rescheduled:'badge-resched',feedback:'badge-feedback'};
 
   let meta='';
-  if(v.status==='planned') meta=`Planned ${fmtTime(v.plannedTime)}`;
+  if(v.status==='planned') meta=`${t('Planned')} ${fmtTime(v.plannedTime)}`;
   else if(v.status==='active'){
-    const gpsStr=v.gps&&v.gps.lat?` · <a href="https://maps.google.com/?q=${v.gps.lat},${v.gps.lng}" target="_blank" style="color:var(--accent);text-decoration:underline">${v.gps.lat}, ${v.gps.lng}</a>`:(v.gps?' · GPS marked':'');
-    meta=`<span style="color:var(--accent)">In since ${fmtTime(v.checkIn)}${gpsStr}</span>`;
+    const gpsStr=v.gps&&v.gps.lat?` · <a href="https://maps.google.com/?q=${v.gps.lat},${v.gps.lng}" target="_blank" style="color:var(--accent);text-decoration:underline">${v.gps.lat}, ${v.gps.lng}</a>`:(v.gps?` · ${t('GPS marked')}`:'');
+    meta=`<span style="color:var(--accent)">${t('In since')} ${fmtTime(v.checkIn)}${gpsStr}</span>`;
   }
-  else if(v.status==='rescheduled') meta=`Rescheduled${v.feedback?' · '+esc(v.feedback):''}`;
+  else if(v.status==='rescheduled') meta=`${t('Rescheduled')}${v.feedback?' · '+esc(v.feedback):''}`;
   else{
     const gpsLink=v.gps&&v.gps.lat?` · <a href="https://maps.google.com/?q=${v.gps.lat},${v.gps.lng}" target="_blank" style="color:var(--text2);font-size:10px">📍 ${v.gps.lat}, ${v.gps.lng}</a>`:'';
     meta=`${fmtTime(v.checkIn)} – ${fmtTime(v.checkOut)}${dur(v.checkIn,v.checkOut)?' · '+dur(v.checkIn,v.checkOut):''}${gpsLink}`;
@@ -1126,12 +1275,12 @@ function buildVisitCardHTML(v){
   let actions='';
   if(v.status==='planned'){
     actions=`<div class="visit-actions">
-      <button class="btn btn-green" onclick="doCheckIn('${v.id}')">Check In</button>
-      <button class="btn btn-amber" onclick="openReschedModal('${v.id}')">Reschedule</button>
+      <button class="btn btn-green" onclick="doCheckIn('${v.id}')">${t('Check In')}</button>
+      <button class="btn btn-amber" onclick="openReschedModal('${v.id}')">${t('Reschedule')}</button>
     </div>`;
   } else if(v.status==='active'){
     actions=`<div class="visit-actions">
-      <button class="btn btn-blue" onclick="openCheckoutModal('${v.id}')">Check Out + Feedback</button>
+      <button class="btn btn-blue" onclick="openCheckoutModal('${v.id}')">${t('Check Out + Feedback')}</button>
     </div>`;
   }
 
@@ -1141,11 +1290,11 @@ function buildVisitCardHTML(v){
   return`<div class="visit-card${v.status==='active'?' active-visit':''}">
     <div class="visit-card-top">
       <div style="flex:1;min-width:0">
-        <div class="visit-name">${esc(party.name)}${party.grade?` <span class="badge" style="background:${gradeBg[party.grade]||'var(--surface2)'};color:${gradeColors[party.grade]||'var(--text2)'};font-size:9px;padding:1px 6px;font-weight:600">${esc(party.grade)}</span>`:''}${isNew?' <span class="badge badge-new" style="font-size:10px;padding:1px 6px">New</span>':''}</div>
+        <div class="visit-name">${esc(party.name)}${party.grade?` <span class="badge" style="background:${gradeBg[party.grade]||'var(--surface2)'};color:${gradeColors[party.grade]||'var(--text2)'};font-size:9px;padding:1px 6px;font-weight:600">${esc(party.grade)}</span>`:''}${isNew?` <span class="badge badge-new" style="font-size:10px;padding:1px 6px">${t('New')}</span>`:''}</div>
         <div class="visit-meta">${meta}</div>
         ${ov>0?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Order: <span style="font-weight:500;color:var(--accent)">${fmtMoney(ov)}</span>${payInfo}</div>`:payInfo?`<div style="font-size:11px">${payInfo}</div>`:''}
       </div>
-      <span class="badge ${bm[v.status]||''}">${v.status}</span>
+      <span class="badge ${bm[v.status]||''}">${t(v.status)||v.status}</span>
     </div>
     <div class="party-strip">
       <span>${esc(party.city)}</span>
@@ -1160,7 +1309,7 @@ function buildVisitCardHTML(v){
 async function doCheckIn(id){
   const v=VISITS[id];if(!v)return;
   setSyncStatus('wait','Getting GPS...');
-  showToast('Getting your location...');
+  showToast(t('Getting your location...'));
   let gpsData={lat:null,lng:null,accuracy:null,x:15+Math.random()*70,y:15+Math.random()*70};
   try{
     const pos=await new Promise((resolve,reject)=>{
@@ -1174,12 +1323,12 @@ async function doCheckIn(id){
     gpsData.x=((gpsData.lng+180)/360)*100;
     gpsData.y=((90-gpsData.lat)/180)*100;
   }catch(e){
-    showToast('GPS unavailable — check-in recorded without location');
+    showToast(t('GPS unavailable — check-in recorded without location'));
   }
   setSyncStatus('wait','Saving...');
   await UPDATE(REF('visits/'+id),{status:'active',checkIn:nowTime(),gps:gpsData});
   setSyncStatus('ok','Live');
-  if(gpsData.lat){showToast('Checked in · GPS: '+gpsData.lat+', '+gpsData.lng);}
+  if(gpsData.lat){showToast((isHindi()?'चेक इन · GPS: ':'Checked in · GPS: ')+gpsData.lat+', '+gpsData.lng);}
 }
 
 let coStatus=null,coPayMode=null,coPickerItems={},coSelectedPricelist='';
@@ -1189,8 +1338,8 @@ function openCheckoutModal(id){
   const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
   coStatus=null;coPayMode=null;coPickerItems={};coSelectedPricelist='';
   document.getElementById('co-visit-id').value=id;
-  document.getElementById('co-title').textContent='Check out — '+party.name;
-  document.getElementById('co-sub').textContent='Checked in at '+fmtTime(v.checkIn);
+  document.getElementById('co-title').textContent=t('Check out')+' — '+party.name;
+  document.getElementById('co-sub').textContent=t('Checked in at')+' '+fmtTime(v.checkIn);
   document.getElementById('co-feedback').value='';
   document.getElementById('co-nextdate').value='';
   document.getElementById('co-rescheddate').value='';
@@ -1223,15 +1372,15 @@ function togglePay(btn,mode){
 
 function buildOrderPicker(){
   const wrap=document.getElementById('order-picker-wrap');
-  if(!PRODUCTS.length){wrap.innerHTML='<div style="padding:12px;color:var(--text2);font-size:12px">No products in master. Admin needs to add products first.</div>';return}
+  if(!PRODUCTS.length){wrap.innerHTML=`<div style="padding:12px;color:var(--text2);font-size:12px">${t('No products in master. Admin needs to add products first.')}</div>`;return}
   const pls=pricelistsArr().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const cats=[...new Set(PRODUCTS.map(p=>p.category))];
   let plSelector='';
   if(pls.length){
     plSelector=`<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <label class="form-label" style="margin:0">Pricelist:</label>
+      <label class="form-label" style="margin:0">${t('Pricelist:')}</label>
       <select class="filter-select" id="co-pricelist" onchange="coSelectedPricelist=this.value;buildOrderPicker()">
-        <option value="">Base prices</option>
+        <option value="">${t('Base prices')}</option>
         ${pls.map(pl=>`<option value="${pl.id}"${coSelectedPricelist===pl.id?' selected':''}>${esc(pl.name)} (${fmtDate(pl.date)})</option>`).join('')}
       </select>
     </div>`;
@@ -1254,7 +1403,7 @@ function buildOrderPicker(){
     });
   });
   const grand=Object.entries(coPickerItems).reduce((s,[pid,{qty}])=>s+getProductPrice(pid,coSelectedPricelist)*qty,0);
-  html+=`<div class="op-total"><span>Order total</span><span id="op-grand">${fmtMoney(grand)}</span></div></div>`;
+  html+=`<div class="op-total"><span>${t('Order total')}</span><span id="op-grand">${fmtMoney(grand)}</span></div></div>`;
   wrap.innerHTML=html;
 }
 
@@ -1270,7 +1419,7 @@ function updQty(prodId,val){
 function updPayBalance(){/* no advance in checkout — just show amount */}
 
 async function submitCheckout(){
-  if(!coStatus){showToast('Please select visit outcome');return}
+  if(!coStatus){showToast(t('Please select visit outcome'));return}
   const id=document.getElementById('co-visit-id').value;
   const v=VISITS[id];if(!v)return;
   const upd={status:coStatus,checkOut:nowTime(),feedback:document.getElementById('co-feedback').value,
@@ -1279,7 +1428,7 @@ async function submitCheckout(){
     pricelistId:coSelectedPricelist||''};
   if(coPayMode){
     const amt=parseFloat(document.getElementById('co-pay-amount').value)||0;
-    if(amt<=0){showToast('Enter a valid payment amount');return}
+    if(amt<=0){showToast(t('Enter a valid payment amount'));return}
     upd.payment={mode:coPayMode,amount:amt,ref:document.getElementById('co-pay-ref').value,notes:document.getElementById('co-pay-notes').value,date:today(),spId:v.spId,partyId:v.partyId};
     // update outstanding
     const party=PARTIES.find(p=>p.id===v.partyId);
@@ -1292,7 +1441,7 @@ async function submitCheckout(){
   setSyncStatus('wait','Saving...');
   await UPDATE(REF('visits/'+id),upd);
   setSyncStatus('ok','Live');
-  closeModal('checkout-modal');showToast('Checked out · Visit recorded');
+  closeModal('checkout-modal');showToast(t('Checked out · Visit recorded'));
 }
 
 let rsVisitId=null;
@@ -1300,8 +1449,8 @@ function openReschedModal(id){
   const v=VISITS[id];if(!v)return;
   const party=PARTIES.find(p=>p.id===v.partyId)||{name:''};
   rsVisitId=id;
-  document.getElementById('rs-title').textContent='Reschedule — '+party.name;
-  document.getElementById('rs-sub').textContent='Currently planned at '+fmtTime(v.plannedTime);
+  document.getElementById('rs-title').textContent=t('Reschedule')+' — '+party.name;
+  document.getElementById('rs-sub').textContent=(isHindi()?'वर्तमान में निर्धारित: ':'Currently planned at ')+fmtTime(v.plannedTime);
   document.getElementById('rs-date').value=today();document.getElementById('rs-time').value='';document.getElementById('rs-reason').value='';
   openModal('resched-modal');
 }
@@ -1310,7 +1459,7 @@ async function submitResched(){
   setSyncStatus('wait','Saving...');
   await UPDATE(REF('visits/'+rsVisitId),{status:'rescheduled',feedback:document.getElementById('rs-reason').value||'Rescheduled',plannedTime:document.getElementById('rs-time').value||v.plannedTime});
   setSyncStatus('ok','Live');
-  closeModal('resched-modal');showToast('Rescheduled');
+  closeModal('resched-modal');showToast(t('Rescheduled'));
 }
 
 /* -- Multi-party planning modal -- */
@@ -1318,7 +1467,7 @@ let _avParties=[];
 
 function openAddVisitModal(){
   const myParties=PARTIES.filter(p=>p.spId===currentSP.id);
-  if(!myParties.length){showToast('No parties assigned to you \u2014 ask admin to add parties');return}
+  if(!myParties.length){showToast(t('No parties assigned to you — ask admin to add parties'));return}
   _avParties=myParties;
   const dateEl=document.getElementById('av-date');
   if(dateEl) dateEl.value=today();
@@ -1345,7 +1494,7 @@ function buildAvPartyList(parties){
     const isPlanned=alreadyPlanned.has(p.id);
     const gradeHtml=p.grade?` <span style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600">${esc(p.grade)}</span>`:'';
     const dueHtml=p.outstanding>0?` &nbsp;\u00b7&nbsp; <span style="color:var(--red)">\u26a0 Due: ${fmtMoney(p.outstanding)}</span>`:'';
-    const plannedNote=isPlanned?' <span style="font-size:10px;color:var(--text2);font-weight:400">(already planned)</span>':'';
+    const plannedNote=isPlanned?' <span style="font-size:10px;color:var(--text2);font-weight:400">'+(isHindi()?'(पहले से योजनाबद्ध)':'(already planned)')+'</span>':'';
     return`<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:${isPlanned?'default':'pointer'};background:${isPlanned?'var(--surface2)':'var(--surface)'}">
       <input type="checkbox" class="av-party-cb" value="${p.id}" ${isPlanned?'disabled':''} onchange="updAvCount()" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)">
       <div style="flex:1;min-width:0">
@@ -1382,7 +1531,7 @@ function avToggleAll(){
 }
 async function submitAddVisit(){
   const checkedBoxes=[...document.querySelectorAll('.av-party-cb:checked:not(:disabled)')];
-  if(!checkedBoxes.length){showToast('Please select at least one party');return}
+  if(!checkedBoxes.length){showToast(t('Please select at least one party'));return}
   const date=document.getElementById('av-date').value||today();
   setSyncStatus('wait','Saving...');
   const updates={};
@@ -1399,7 +1548,7 @@ async function submitAddVisit(){
   await UPDATE(REF('/'),updates);
   setSyncStatus('ok','Live');
   closeModal('add-visit-modal');
-  showToast(checkedBoxes.length===1?'1 visit added to plan':`${checkedBoxes.length} visits added to plan`);
+  showToast(checkedBoxes.length===1?t('1 visit added to plan'):`${checkedBoxes.length} ${isHindi()?'विज़िट योजना में जोड़ी':'visits added to plan'}`);
 }
 
 /* ── NEW PARTY VISIT (SP creates party + checks in immediately) ── */
@@ -1414,15 +1563,15 @@ async function submitNewPartyVisit(){
   const name=document.getElementById('npv-name').value.trim();
   const city=document.getElementById('npv-city').value.trim();
   const phone=document.getElementById('npv-phone').value.trim();
-  if(!name){showToast('Party name is required');return}
-  if(!city){showToast('City is required');return}
+  if(!name){showToast(t('Party name is required'));return}
+  if(!city){showToast(t('City is required'));return}
 
   // Check duplicate
   const dup=PARTIES.find(p=>p.name.toLowerCase()===name.toLowerCase()&&(p.city||'').toLowerCase()===city.toLowerCase());
   if(dup){showToast('Party "'+name+'" in '+city+' already exists');return}
 
   setSyncStatus('wait','Creating party...');
-  showToast('Getting your location...');
+  showToast(t('Getting your location...'));
 
   // Get GPS
   let gpsData={lat:null,lng:null,accuracy:null,x:15+Math.random()*70,y:15+Math.random()*70};
@@ -1435,7 +1584,7 @@ async function submitNewPartyVisit(){
     gpsData.lng=+pos.coords.longitude.toFixed(6);
     gpsData.accuracy=Math.round(pos.coords.accuracy);
   }catch(e){
-    showToast('GPS unavailable — continuing without location');
+    showToast(t('GPS unavailable — continuing without location'));
   }
 
   try{
@@ -1451,11 +1600,11 @@ async function submitNewPartyVisit(){
 
     setSyncStatus('ok','Live');
     closeModal('new-party-visit-modal');
-    if(gpsData.lat){showToast('Party created & checked in · GPS: '+gpsData.lat+', '+gpsData.lng);}
-    else{showToast('Party created & checked in');}
+    if(gpsData.lat){showToast((isHindi()?'पार्टी बनाई और चेक इन हुए · GPS: ':'Party created & checked in · GPS: ')+gpsData.lat+', '+gpsData.lng);}
+    else{showToast(t('Party created & checked in'));}
   }catch(e){
     setSyncStatus('err','Error');
-    showToast('Failed: '+e.message);
+    showToast(t('Failed:')+' '+e.message);
   }
 }
 
