@@ -507,7 +507,7 @@ input,textarea,select{font-family:var(--font)}
 <div class="modal-overlay" id="resched-modal">
 <div class="modal">
   <div class="modal-handle"></div>
-  <div class="modal-title" id="rs-title" data-t-default="Reschedule visit">Reschedule visit</div>
+  <div class="modal-title" id="rs-title">Reschedule visit</div>
   <div class="modal-sub" id="rs-sub"></div>
   <div class="form-row">
     <div><label class="form-label" data-t="New date">New date</label><input type="date" class="form-input" id="rs-date"></div>
@@ -764,15 +764,13 @@ let currentRole=null; // 'admin' | 'sp'
 let currentSP=null;   // {id, name, initials, color, bg}
 
 /* ── HINDI TRANSLATION SYSTEM ──
-   Only activates when currentSP.language === 'hi'
-   To enable for a specific SP: set language:"hi" in Firebase
-   under salespersons/<id>/language
+   Activates only when currentSP.language === 'hi'
+   To enable: set language:"hi" in Firebase under salespersons/<id>/language
 */
 const HI={
-  // Mobile view
   'Logged in as':'लॉग इन किया है',
   'Good day,':'नमस्ते,',
-  'Today\'s visits':'आज की विज़िट',
+  "Today's visits":"आज की विज़िट",
   'No visits planned today.':'आज कोई विज़िट नहीं है।',
   'Planned':'योजनाबद्ध',
   'Done':'पूरा',
@@ -784,24 +782,19 @@ const HI={
   'Submit expenses':'खर्च जमा करें',
   'Expenses: Pending approval':'खर्च: अनुमोदन बाकी',
   '✓ Expenses approved':'✓ खर्च स्वीकृत',
-  // Visit card statuses
   'planned':'योजनाबद्ध',
   'active':'चेक इन',
   'order':'ऑर्डर',
   'noorder':'ऑर्डर नहीं',
   'rescheduled':'पुनः निर्धारित',
   'feedback':'फॉलो-अप',
-  // Visit card text
   'In since':'चेक इन:',
   'GPS marked':'GPS चिह्नित',
   'Rescheduled':'पुनः निर्धारित',
-  'Order:':'ऑर्डर:',
   'New':'नया',
-  // Action buttons
   'Check In':'चेक इन',
   'Reschedule':'पुनः निर्धारित करें',
   'Check Out + Feedback':'चेक आउट + फीडबैक',
-  // Checkout modal
   'Check out':'चेक आउट',
   'Checked in at':'चेक इन हुआ:',
   'GPS location captured at check-in':'चेक-इन पर GPS दर्ज हुआ',
@@ -825,14 +818,12 @@ const HI={
   'Next visit date':'अगली विज़िट तारीख',
   'Submit & Check Out':'जमा करें और चेक आउट करें',
   'Cancel':'रद्द करें',
-  // Reschedule modal
   'Reschedule visit':'विज़िट पुनः निर्धारित करें',
   'New date':'नई तारीख',
   'New time':'नया समय',
   'Reason':'कारण',
   'Why rescheduling?':'क्यों पुनः निर्धारित कर रहे हैं?',
   'Confirm reschedule':'पुनः निर्धारित करें',
-  // Plan visits modal
   'Plan visits':'विज़िट योजना',
   'Select parties and date — one planned visit per party':'पार्टी और तारीख चुनें',
   'Date':'तारीख',
@@ -841,29 +832,7 @@ const HI={
   'Search by name, city or state...':'नाम, शहर या राज्य से खोजें...',
   'Add to plan':'योजना में जोड़ें',
   '(already planned)':'(पहले से योजनाबद्ध)',
-  // New party modal
   'New party visit':'नई पार्टी विज़िट',
-  'Party name *':'पार्टी का नाम *',
-  'e.g. Sharma Traders':'जैसे शर्मा ट्रेडर्स',
-  'City *':'शहर *',
-  'e.g. Jaipur':'जैसे जयपुर',
-  'Phone (optional)':'फोन (वैकल्पिक)',
-  'GPS will be captured on check-in':'चेक-इन पर GPS दर्ज होगा',
-  'Create party & Check in':'पार्टी बनाएं और चेक इन करें',
-  // Toasts
-  'Getting your location...':'आपकी लोकेशन मिल रही है...',
-  'GPS unavailable — check-in recorded without location':'GPS उपलब्ध नहीं — बिना लोकेशन के चेक-इन दर्ज हुआ',
-  'Please select visit outcome':'विज़िट परिणाम चुनें',
-  'Enter a valid payment amount':'सही भुगतान राशि दर्ज करें',
-  'Checked out · Visit recorded':'चेक आउट · विज़िट दर्ज हुई',
-  'Rescheduled':'पुनः निर्धारित हुआ',
-  'No parties assigned to you — ask admin to add parties':'आपको कोई पार्टी नहीं दी गई — एडमिन से संपर्क करें',
-  'Please select at least one party':'कम से कम एक पार्टी चुनें',
-  'Party name is required':'पार्टी का नाम जरूरी है',
-  'City is required':'शहर जरूरी है',
-  'GPS unavailable — continuing without location':'GPS उपलब्ध नहीं — बिना लोकेशन के जारी है',
-  'Party created & checked in':'पार्टी बनाई और चेक इन हुए',
-  'Failed:':'विफल:',
   'Add a new party and check in immediately':'नई पार्टी जोड़ें और तुरंत चेक इन करें',
   'Party / Firm name *':'पार्टी / फर्म का नाम *',
   'Full firm name':'पूरा फर्म नाम',
@@ -871,27 +840,32 @@ const HI={
   'City or area':'शहर या क्षेत्र',
   'Phone':'फोन',
   'Phone number':'फोन नंबर',
+  'GPS will be captured on check-in':'चेक-इन पर GPS दर्ज होगा',
+  'Create party & Check in':'पार्टी बनाएं और चेक इन करें',
+  'Getting your location...':'आपकी लोकेशन मिल रही है...',
+  'GPS unavailable — check-in recorded without location':'GPS उपलब्ध नहीं — बिना लोकेशन के चेक-इन दर्ज हुआ',
+  'Please select visit outcome':'विज़िट परिणाम चुनें',
+  'Enter a valid payment amount':'सही भुगतान राशि दर्ज करें',
+  'Checked out · Visit recorded':'चेक आउट · विज़िट दर्ज हुई',
+  'No parties assigned to you — ask admin to add parties':'आपको कोई पार्टी नहीं दी गई — एडमिन से संपर्क करें',
+  'Please select at least one party':'कम से कम एक पार्टी चुनें',
+  'Party name is required':'पार्टी का नाम जरूरी है',
+  'City is required':'शहर जरूरी है',
+  'GPS unavailable — continuing without location':'GPS उपलब्ध नहीं — बिना लोकेशन के जारी है',
+  'Party created & checked in':'पार्टी बनाई और चेक इन हुए',
+  'Failed:':'विफल:',
   '1 visit added to plan':'1 विज़िट योजना में जोड़ी',
-  // Pricelist
   'Base prices':'आधार मूल्य',
   'Pricelist:':'मूल्य सूची:',
   'Order total':'ऑर्डर कुल',
   'No products in master. Admin needs to add products first.':'कोई उत्पाद नहीं है। एडमिन से उत्पाद जोड़ने के लिए कहें।',
 };
 
-/* Helper — returns translated text if current SP is Hindi */
 function t(str){
   if(!currentSP||currentSP.language!=='hi')return str;
   return HI[str]||str;
 }
-/* Helper — translate dynamic strings with values */
-function td(template,...vals){
-  if(!currentSP||currentSP.language!=='hi')return template.replace(/{(\d+)}/g,(_,i)=>vals[i]);
-  // translate the template key first, then insert values
-  const base=HI[template]||template;
-  return base.replace(/{(\d+)}/g,(_,i)=>vals[i]);
-}
-function isHindi(){return currentSP&&currentSP.language==='hi';}
+function isHindi(){return !!(currentSP&&currentSP.language==='hi');}
 let _listeners=[];
 
 /* ── IN-MEMORY CACHE (synced from Firebase) ── */
@@ -1057,20 +1031,17 @@ function doLogout(){
   document.getElementById('nav-tabs-wrap').innerHTML='';
 }
 
-/* ── UI TRANSLATION (Hindi) ── */
+/* ── UI TRANSLATION ── */
 function translateUI(){
-  if(!currentSP||currentSP.language!=='hi')return;
-  // Translate all elements with data-t attribute (textContent)
+  if(!isHindi())return;
   document.querySelectorAll('[data-t]').forEach(el=>{
-    const key=el.getAttribute('data-t');
-    if(HI[key])el.textContent=HI[key];
+    const k=el.getAttribute('data-t');
+    if(HI[k])el.textContent=HI[k];
   });
-  // Translate placeholder text
   document.querySelectorAll('[data-t-ph]').forEach(el=>{
-    const key=el.getAttribute('data-t-ph');
-    if(HI[key])el.placeholder=HI[key];
+    const k=el.getAttribute('data-t-ph');
+    if(HI[k])el.placeholder=HI[k];
   });
-  // Nav tab "My Visits"
   const navTab=document.querySelector('#nav-tabs-wrap .nav-tab');
   if(navTab)navTab.textContent='मेरी विज़िट';
 }
@@ -1571,7 +1542,7 @@ async function submitNewPartyVisit(){
   if(dup){showToast('Party "'+name+'" in '+city+' already exists');return}
 
   setSyncStatus('wait','Creating party...');
-  showToast(t('Getting your location...'));
+  showToast('Getting your location...');
 
   // Get GPS
   let gpsData={lat:null,lng:null,accuracy:null,x:15+Math.random()*70,y:15+Math.random()*70};
