@@ -354,6 +354,8 @@ input,textarea,select{font-family:var(--font)}
 @media(max-width:900px){.admin-grid{grid-template-columns:1fr}.metrics-row{grid-template-columns:1fr 1fr}.meca-grid{grid-template-columns:1fr}.sp-meca-row{grid-template-columns:110px repeat(5,1fr)}}
 @media(max-width:540px){.metrics-row{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -1636,12 +1638,7 @@ function renderDashboard(){
     </div>`;
   }).join('');
 
-  // Map pins
-  const colorMap={order:'#1A5C3A',active:'#378ADD',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990'};
-  const pins=todayV.filter(v=>v.gps).map(v=>{
-    const party=PARTIES.find(p=>p.id===v.partyId);
-    return`<div class="map-pin" style="left:${v.gps.x}%;top:${v.gps.y}%;background:${colorMap[v.status]||'#999'}" title="${party?party.name:''}"></div>`;
-  }).join('');
+  // Map will be initialized after DOM render
 
   const pendingNewParties=PARTIES.filter(p=>p.source==='app'&&!p.approved);
   const pendingBanner=pendingNewParties.length?`<div style="background:var(--amber-light);border:1px solid #F0C68A;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1678,25 +1675,40 @@ function renderDashboard(){
       <div class="right-col">
         <div class="card">
           <div class="card-header">GPS visit map</div>
-          <div class="map-area">
-            <div class="map-grid"></div>
-            <div class="map-road-h" style="top:35%;left:0;right:0"></div>
-            <div class="map-road-h" style="top:68%;left:0;right:0"></div>
-            <div class="map-road-v" style="left:28%;top:0;bottom:0"></div>
-            <div class="map-road-v" style="left:72%;top:0;bottom:0"></div>
-            ${pins}
-            <div class="map-legend">
-              <span><span class="legend-dot" style="background:#1A5C3A"></span>Order</span>
-              <span><span class="legend-dot" style="background:#378ADD"></span>Active</span>
-              <span><span class="legend-dot" style="background:#C0392B"></span>No order</span>
-            </div>
-          </div>
+          <div id="gps-map" style="height:280px;border-radius:0 0 12px 12px;z-index:1"></div>
         </div>
         <div class="card"><div class="card-header">SP summary</div>${spRows||'<div style="padding:16px;font-size:12px;color:var(--text2)">No salespersons yet</div>'}</div>
         <div class="card"><div class="card-header">Feedback log</div>${fbItems||'<div style="padding:16px;font-size:12px;color:var(--text2)">No feedback yet</div>'}</div>
       </div>
     </div>
   </div>`);
+
+  // Initialize Leaflet GPS map
+  setTimeout(()=>{
+    const mapEl=document.getElementById('gps-map');
+    if(!mapEl)return;
+    const colorMap={order:'#1A5C3A',active:'#378ADD',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990'};
+    const gpsVisits=todayV.filter(v=>v.gps&&v.gps.lat&&v.gps.lng);
+    if(!gpsVisits.length){
+      mapEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px">No GPS data for today\'s visits</div>';
+      return;
+    }
+    const map=L.map('gps-map',{scrollWheelZoom:false});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
+    const bounds=[];
+    gpsVisits.forEach(v=>{
+      const party=PARTIES.find(p=>p.id===v.partyId);
+      const sp=SALESPERSONS.find(s=>s.id===v.spId);
+      const col=colorMap[v.status]||'#999';
+      const icon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${col};border:2.5px solid white;box-shadow:0 2px 4px rgba(0,0,0,.3)"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+      const marker=L.marker([v.gps.lat,v.gps.lng],{icon}).addTo(map);
+      const label=`<b>${party?party.name:'Unknown'}</b><br>${sp?sp.name:''}<br>Status: ${v.status}<br>Time: ${v.checkIn||'—'}<br>Accuracy: ${v.gps.accuracy?v.gps.accuracy+'m':'N/A'}<br><a href="https://maps.google.com/?q=${v.gps.lat},${v.gps.lng}" target="_blank">Open in Google Maps</a>`;
+      marker.bindPopup(label);
+      bounds.push([v.gps.lat,v.gps.lng]);
+    });
+    if(bounds.length===1)map.setView(bounds[0],15);
+    else map.fitBounds(bounds,{padding:[30,30]});
+  },100);
 }
 
 /* ════════════════════════════════════════════════════════════
