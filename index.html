@@ -1437,11 +1437,13 @@ async function submitResched(){
 
 /* -- Multi-party planning modal -- */
 let _avParties=[];
+let _avSelected=new Set();
 
 function openAddVisitModal(){
   const myParties=PARTIES.filter(p=>p.spId===currentSP.id);
   if(!myParties.length){showToast(t('No parties assigned to you — ask admin to add parties'));return}
   _avParties=myParties;
+  _avSelected=new Set();
   const dateEl=document.getElementById('av-date');
   if(dateEl) dateEl.value=today();
   const searchEl=document.getElementById('av-party-search');
@@ -1465,17 +1467,24 @@ function buildAvPartyList(parties){
   }
   wrap.innerHTML=parties.map(p=>{
     const isPlanned=alreadyPlanned.has(p.id);
+    const isSelected=_avSelected.has(p.id);
     const gradeHtml=p.grade?` <span style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600">${esc(p.grade)}</span>`:'';
     const dueHtml=p.outstanding>0?` &nbsp;\u00b7&nbsp; <span style="color:var(--red)">\u26a0 Due: ${fmtMoney(p.outstanding)}</span>`:'';
     const plannedNote=isPlanned?' <span style="font-size:10px;color:var(--text2);font-weight:400">'+(isHindi()?'(पहले से योजनाबद्ध)':'(already planned)')+'</span>':'';
-    return`<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:${isPlanned?'default':'pointer'};background:${isPlanned?'var(--surface2)':'var(--surface)'}">
-      <input type="checkbox" class="av-party-cb" value="${p.id}" ${isPlanned?'disabled':''} onchange="updAvCount()" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)">
+    return`<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:${isPlanned?'default':'pointer'};background:${isPlanned?'var(--surface2)':isSelected?'var(--accent-light)':'var(--surface)'}">
+      <input type="checkbox" class="av-party-cb" value="${p.id}" ${isPlanned?'disabled':''} ${isSelected?'checked':''} onchange="avToggleCb(this)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)">
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:500">${esc(p.name)}${gradeHtml}${plannedNote}</div>
         <div style="font-size:11px;color:var(--text2)">${esc(p.city||'')}${p.city&&p.state?', ':''}${esc(p.state||'')}${dueHtml}</div>
       </div>
     </label>`;
   }).join('');
+  updAvCount();
+}
+
+function avToggleCb(cb){
+  if(cb.checked) _avSelected.add(cb.value);
+  else _avSelected.delete(cb.value);
   updAvCount();
 }
 
@@ -1491,27 +1500,29 @@ function filterAvParties(){
 }
 
 function updAvCount(){
-  const checked=[...document.querySelectorAll('.av-party-cb:checked:not(:disabled)')];
   const el=document.getElementById('av-selected-count');
-  if(el) el.textContent=checked.length?`(${checked.length} selected)`:'';
+  if(el) el.textContent=_avSelected.size?`(${_avSelected.size} selected)`:'';
 }
 
 function avToggleAll(){
   const cbs=[...document.querySelectorAll('.av-party-cb:not(:disabled)')];
   const allChecked=cbs.length>0&&cbs.every(cb=>cb.checked);
-  cbs.forEach(cb=>{cb.checked=!allChecked;});
+  cbs.forEach(cb=>{
+    cb.checked=!allChecked;
+    if(cb.checked) _avSelected.add(cb.value);
+    else _avSelected.delete(cb.value);
+  });
   updAvCount();
 }
 async function submitAddVisit(){
-  const checkedBoxes=[...document.querySelectorAll('.av-party-cb:checked:not(:disabled)')];
-  if(!checkedBoxes.length){showToast(t('Please select at least one party'));return}
+  if(!_avSelected.size){showToast(t('Please select at least one party'));return}
   const date=document.getElementById('av-date').value||today();
   setSyncStatus('wait','Saving...');
   const updates={};
-  checkedBoxes.forEach(cb=>{
+  _avSelected.forEach(partyId=>{
     const newId=uid();
     updates['visits/'+newId]={
-      id:newId,spId:currentSP.id,partyId:cb.value,
+      id:newId,spId:currentSP.id,partyId,
       plannedTime:'',date,status:'planned',
       checkIn:null,checkOut:null,feedback:'',nextVisit:'',
       orderItems:[],payment:null,
@@ -1521,7 +1532,7 @@ async function submitAddVisit(){
   await UPDATE(REF('/'),updates);
   setSyncStatus('ok','Live');
   closeModal('add-visit-modal');
-  showToast(checkedBoxes.length===1?t('1 visit added to plan'):`${checkedBoxes.length} ${isHindi()?'विज़िट योजना में जोड़ी':'visits added to plan'}`);
+  showToast(_avSelected.size===1?t('1 visit added to plan'):`${_avSelected.size} ${isHindi()?'विज़िट योजना में जोड़ी':'visits added to plan'}`);
 }
 
 /* ── NEW PARTY VISIT (SP creates party + checks in immediately) ── */
