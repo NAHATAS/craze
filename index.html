@@ -1596,8 +1596,22 @@ async function submitNewPartyVisit(){
    ADMIN — DASHBOARD
    ════════════════════════════════════════════════════════════ */
 function renderDashboard(){
+  // Preserve filter selections before DOM rebuild
+  const prevState=document.getElementById('df-state')?.value||'all';
+  const prevSP=document.getElementById('df-sp')?.value||'all';
+  const prevStatus=document.getElementById('df-status')?.value||'all';
+
   const va=visitsArr();
-  const todayV=va.filter(v=>v.date===today());
+  let todayV=va.filter(v=>v.date===today());
+
+  // Apply filters
+  if(prevState!=='all') todayV=todayV.filter(v=>{const p=PARTIES.find(p=>p.id===v.partyId);return p&&p.state===prevState;});
+  if(prevSP!=='all') todayV=todayV.filter(v=>v.spId===prevSP);
+  if(prevStatus!=='all'){
+    if(prevStatus==='feedback') todayV=todayV.filter(v=>v.status==='noorder'||v.status==='order');
+    else todayV=todayV.filter(v=>v.status===prevStatus);
+  }
+
   const todayOrd=todayV.filter(v=>v.status==='order');
   const todayOrdVal=todayOrd.reduce((s,v)=>s+orderValue(v),0);
   const todayPay=todayV.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
@@ -1693,6 +1707,11 @@ function renderDashboard(){
       </div>
     </div>
   </div>`);
+
+  // Restore filter selections after DOM rebuild
+  const dfState=document.getElementById('df-state');if(dfState)dfState.value=prevState;
+  const dfSP=document.getElementById('df-sp');if(dfSP)dfSP.value=prevSP;
+  const dfStatus=document.getElementById('df-status');if(dfStatus)dfStatus.value=prevStatus;
 
   // Initialize Leaflet GPS map
   setTimeout(()=>{
