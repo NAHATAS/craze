@@ -1090,12 +1090,13 @@ function buildNav(){
     const tabs=[
       ['dashboard','Dashboard'],['tours','Tours'],['meca','MeCA'],
       ['prodrep','Products'],['inactive','Inactive'],['payments','Payments'],
-      ['parties','Parties'],['pricelist','Pricelist'],['settings','⚙ Settings']
+      ['parties','Parties'],['pricelist','Pricelist'],['spsummary','SP Summary'],['settings','⚙ Settings']
     ];
     tabs.forEach(([v,l],i)=>{
       const b=document.createElement('button');
       b.className='nav-tab'+(i===0?' active':'');
       b.textContent=l;b.id='nav-tab-'+v;
+      b.dataset.view=v;
       b.onclick=()=>switchView(v,b);
       wrap.appendChild(b);
     });
@@ -1149,7 +1150,7 @@ function refreshAll(){
   _refreshTimer=setTimeout(()=>{
     if(currentRole==='admin'){
       const activeTab=document.querySelector('.nav-tab.active');
-      if(activeTab)refreshView(activeTab.textContent.replace('⚙ ','').toLowerCase().replace(/\s+/g,''));
+      if(activeTab)refreshView(activeTab.dataset.view||activeTab.textContent.replace('⚙ ','').toLowerCase().replace(/\s+/g,''));
     } else {
       renderMobileView();
     }
@@ -1160,7 +1161,7 @@ function refreshAll(){
 const VIEW_RENDERERS={
   dashboard:renderDashboard, tours:renderTours, meca:renderMeCA,
   prodrep:renderProductReport, inactive:renderInactive, payments:renderPaymentReport,
-  parties:renderParties, pricelist:renderPricelist, settings:renderSettingsView,
+  parties:renderParties, pricelist:renderPricelist, spsummary:renderSPSummary, settings:renderSettingsView,
 };
 
 function switchView(name,btn){
@@ -2623,6 +2624,281 @@ function getProductPrice(prodId,pricelistId){
   }
   const p=PRODUCTS.find(x=>x.id===prodId);
   return p?p.price:0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN — SP SUMMARY (Auto-tours + Visit stats + Payments)
+   ════════════════════════════════════════════════════════════ */
+
+/* Home city — visits to parties outside this city trigger auto-tours */
+const HOME_CITY='Kolkata';
+
+/* Compute auto-tours from visit data for a given SP in a date range.
+   Logic: Group visits where party.city ≠ HOME_CITY by STATE.
+   Within each state, chain visits with ≤24hr gap between consecutive check-ins.
+   Each chain = one auto-tour. */
+function computeAutoTours(spId,from,to){
+  const spVisits=visitsArr().filter(v=>
+    v.spId===spId&&v.date>=from&&v.date<=to&&v.checkIn&&
+    ['order','noorder','active'].includes(v.status)
+  ).sort((a,b)=>(a.date+' '+a.checkIn).localeCompare(b.date+' '+b.checkIn));
+
+  // Group by party state, excluding home city
+  const outstation=spVisits.filter(v=>{
+    const p=PARTIES.find(x=>x.id===v.partyId);
+    return p&&(p.city||'').toLowerCase()!==HOME_CITY.toLowerCase();
+  });
+
+  // Group by state
+  const byState={};
+  outstation.forEach(v=>{
+    const p=PARTIES.find(x=>x.id===v.partyId);
+    const st=p?.state||'Unknown';
+    if(!byState[st])byState[st]=[];
+    byState[st].push(v);
+  });
+
+  const tours=[];
+  Object.entries(byState).forEach(([state,visits])=>{
+    // Sort by date+time
+    visits.sort((a,b)=>(a.date+' '+(a.checkIn||'')).localeCompare(b.date+' '+(b.checkIn||'')));
+    // Chain: split into tours where gap > 24hrs
+    let chain=[visits[0]];
+    for(let i=1;i<visits.length;i++){
+      const prev=chain[chain.length-1];
+      const prevEnd=new Date(prev.date+'T'+(prev.checkOut||prev.checkIn||'23:59'));
+      const currStart=new Date(visits[i].date+'T'+(visits[i].checkIn||'00:00'));
+      const gapHrs=(currStart-prevEnd)/(1000*60*60);
+      if(gapHrs>24){
+        // close current chain, start new
+        tours.push({state,visits:chain});
+        chain=[visits[i]];
+      } else {
+        chain.push(visits[i]);
+      }
+    }
+    if(chain.length)tours.push({state,visits:chain});
+  });
+
+  // Enrich each tour
+  return tours.map(t=>{
+    const dates=t.visits.map(v=>v.date).sort();
+    const cities=[...new Set(t.visits.map(v=>{const p=PARTIES.find(x=>x.id===v.partyId);return p?.city||'?';}))];
+    const orders=t.visits.filter(v=>v.status==='order');
+    const ov=orders.reduce((s,v)=>s+orderValue(v),0);
+    const lastVisitDate=dates[dates.length-1];
+    const hoursSinceLast=(Date.now()-new Date(lastVisitDate+'T23:59'))/3600000;
+    return{
+      state:t.state,
+      cities,
+      fromDate:dates[0],
+      toDate:dates[dates.length-1],
+      days:daysBetween(dates[0],dates[dates.length-1])+1,
+      visits:t.visits,
+      totalVisits:t.visits.length,
+      completed:t.visits.filter(v=>['order','noorder'].includes(v.status)).length,
+      orders:orders.length,
+      orderValue:ov,
+      isActive:hoursSinceLast<24,
+      visitIds:t.visits.map(v=>v.id)
+    };
+  }).sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
+}
+
+function renderSPSummary(){
+  const fy=getCurrentFY();
+  const prevSP=document.getElementById('sps-sp')?.value||'all';
+  const prevFrom=document.getElementById('sps-from')?.value||fy.from;
+  const prevTo=document.getElementById('sps-to')?.value||today();
+
+  setViewHTML(`<div class="section-shell">
+    <div class="admin-topbar">
+      <div><div class="admin-title">SP Summary</div><div class="admin-sub">Auto-detected tours, visit stats & payment history</div></div>
+      <div class="filter-row">
+        <select class="filter-select" id="sps-sp" onchange="refreshSPSummary()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <input type="date" class="filter-select" id="sps-from" value="${prevFrom}" onchange="refreshSPSummary()">
+        <span style="font-size:13px;color:var(--text2)">to</span>
+        <input type="date" class="filter-select" id="sps-to" value="${prevTo}" onchange="refreshSPSummary()">
+        <button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('sps-from').value='${fy.from}';document.getElementById('sps-to').value=today();refreshSPSummary()">This FY</button>
+      </div>
+    </div>
+    <div id="sps-content"></div>
+  </div>`);
+
+  // Restore filters
+  const spsSpEl=document.getElementById('sps-sp');if(spsSpEl)spsSpEl.value=prevSP;
+  const spsFromEl=document.getElementById('sps-from');if(spsFromEl)spsFromEl.value=prevFrom;
+  const spsToEl=document.getElementById('sps-to');if(spsToEl)spsToEl.value=prevTo;
+
+  refreshSPSummary();
+}
+
+function refreshSPSummary(){
+  const spF=document.getElementById('sps-sp')?.value||'all';
+  const from=document.getElementById('sps-from')?.value||'';
+  const to=document.getElementById('sps-to')?.value||'';
+  if(!from||!to)return;
+
+  const sps=spF==='all'?SALESPERSONS:SALESPERSONS.filter(s=>s.id===spF);
+  if(!sps.length){document.getElementById('sps-content').innerHTML='<div style="padding:24px;text-align:center;color:var(--text2)">No salespersons found.</div>';return;}
+
+  document.getElementById('sps-content').innerHTML=sps.map(sp=>{
+    const spVisits=visitsArr().filter(v=>v.spId===sp.id&&v.date>=from&&v.date<=to);
+    const completed=spVisits.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut);
+    const orders=spVisits.filter(v=>v.status==='order');
+    const totOV=orders.reduce((s,v)=>s+orderValue(v),0);
+    const convPct=completed.length?Math.round(orders.length/completed.length*100):0;
+    const pays=spVisits.filter(v=>v.payment);
+    const totPay=pays.reduce((s,v)=>s+v.payment.amount,0);
+    const autoTours=computeAutoTours(sp.id,from,to);
+
+    // Metrics row
+    const mc=(n,l,c='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${c}">${n}</div><div class="metric-lbl">${l}</div></div>`;
+
+    // Auto-tour rows
+    const tourRows=autoTours.map((t,idx)=>{
+      const statusBadge=t.isActive?'<span class="tour-badge tour-active">Active</span>':'<span class="tour-badge tour-approved">Completed</span>';
+      return`<tr class="sps-tour-row" onclick="toggleTourDetail('sps-td-${sp.id}-${idx}',this)" style="cursor:pointer">
+        <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
+        <td style="font-weight:600">${esc(t.state)}</td>
+        <td style="font-size:11px;color:var(--text2)">${esc(t.cities.join(', '))}</td>
+        <td class="time-mono" style="white-space:nowrap">${fmtDate(t.fromDate)} – ${fmtDate(t.toDate)}</td>
+        <td style="text-align:center">${t.days}d</td>
+        <td style="text-align:center">${t.totalVisits}</td>
+        <td style="text-align:center">${t.completed}</td>
+        <td style="text-align:center;font-weight:500">${t.orders}</td>
+        <td class="price-tag">${fmtMoney(t.orderValue)}</td>
+        <td>${statusBadge}</td>
+        <td style="text-align:center"><button class="icon-btn" onclick="event.stopPropagation();exportAutoTour('${sp.id}',${idx},'${from}','${to}')" title="Export tour data">Export</button></td>
+      </tr>
+      <tr id="sps-td-${sp.id}-${idx}" style="display:none"><td colspan="11" style="padding:0;background:var(--surface2)">
+        <div style="padding:10px 16px;max-height:300px;overflow-y:auto">
+          ${t.visits.map((v,vi)=>{
+            const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',city:'?'};
+            const ov=orderValue(v);
+            const bm={order:'badge-order',noorder:'badge-noorder',active:'badge-active',planned:'badge-planned'};
+            return`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+              <span style="color:var(--text3);min-width:20px;text-align:center">${vi+1}</span>
+              <span style="font-weight:500;flex:1">${esc(party.name)}</span>
+              <span style="color:var(--text2)">${esc(party.city||'')}</span>
+              <span class="time-mono">${fmtDate(v.date)}</span>
+              <span class="time-mono">${v.checkIn?fmtTime(v.checkIn):'—'} – ${v.checkOut?fmtTime(v.checkOut):'—'}</span>
+              <span class="badge ${bm[v.status]||''}" style="font-size:10px;padding:2px 6px">${v.status}</span>
+              <span class="price-tag">${ov>0?fmtMoney(ov):'—'}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </td></tr>`;
+    }).join('');
+
+    // Payment rows
+    const payRows=pays.sort((a,b)=>b.date.localeCompare(a.date)).map((v,idx)=>{
+      const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
+      return`<tr>
+        <td style="text-align:center;color:var(--text3)">${idx+1}</td>
+        <td class="time-mono">${fmtDate(v.date)}</td>
+        <td style="font-weight:500">${esc(party.name)}</td>
+        <td><span style="font-size:11px;font-weight:600">${esc(v.payment.mode)}</span></td>
+        <td class="price-tag">${fmtMoney(v.payment.amount)}</td>
+        <td class="time-mono">${esc(v.payment.ref||'—')}</td>
+        <td style="font-size:11px;color:var(--text2)">${esc(v.payment.notes||'—')}</td>
+      </tr>`;
+    }).join('');
+
+    const payByMode={};pays.forEach(v=>{const m=v.payment.mode;payByMode[m]=(payByMode[m]||0)+v.payment.amount;});
+    const payModeSummary=Object.entries(payByMode).map(([m,a])=>`${m}: ${fmtMoney(a)}`).join(' · ');
+
+    return`<div class="card" style="margin-bottom:20px">
+      <div class="card-header" style="padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="av" style="width:32px;height:32px;background:${sp.bg};color:${sp.color};font-size:12px">${esc(sp.initials)}</div>
+          <div><div style="font-size:15px;font-weight:600">${esc(sp.name)}</div>
+          <div style="font-size:11px;color:var(--text2)">${PARTIES.filter(p=>p.spId===sp.id).length} parties assigned</div></div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:14px 18px;border-bottom:1px solid var(--border)">
+        ${mc(spVisits.length,'Total visits')}
+        ${mc(completed.length,'Completed')}
+        ${mc(orders.length,'Orders')}
+        ${mc(convPct+'%','Conversion',convPct>=50?'var(--accent)':'var(--red)')}
+        ${mc(fmtMoney(totOV),'Order value','var(--accent)')}
+        ${mc(fmtMoney(totPay),'Collected','var(--teal)')}
+      </div>
+
+      <!-- Auto-Tours -->
+      <div style="border-bottom:1px solid var(--border)">
+        <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-tours-${sp.id}',this)">
+          <span style="font-size:13px;font-weight:600">🗺 Tour History <span style="font-weight:400;color:var(--text2)">(${autoTours.length} tours detected)</span></span>
+          <span style="font-size:11px;color:var(--text3)">▼ Click to expand</span>
+        </div>
+        <div id="sps-tours-${sp.id}" style="display:none">
+          ${autoTours.length?`<div class="tbl-scroll"><table class="tbl">
+            <thead><tr><th>Sl</th><th>State</th><th>Cities</th><th>Dates</th><th>Days</th><th>Visits</th><th>Done</th><th>Orders</th><th>Value</th><th>Status</th><th></th></tr></thead>
+            <tbody>${tourRows}</tbody>
+            <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="5"></td><td style="text-align:center">${autoTours.reduce((s,t)=>s+t.totalVisits,0)}</td><td style="text-align:center">${autoTours.reduce((s,t)=>s+t.completed,0)}</td><td style="text-align:center">${autoTours.reduce((s,t)=>s+t.orders,0)}</td><td class="price-tag">${fmtMoney(autoTours.reduce((s,t)=>s+t.orderValue,0))}</td><td colspan="2"></td></tr></tfoot>
+          </table></div>`:'<div style="padding:16px;font-size:12px;color:var(--text2);text-align:center">No outstation tours detected in this period</div>'}
+        </div>
+      </div>
+
+      <!-- Payments -->
+      <div>
+        <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-pays-${sp.id}',this)">
+          <span style="font-size:13px;font-weight:600">💰 Payment Collections <span style="font-weight:400;color:var(--text2)">(${pays.length} payments · ${fmtMoney(totPay)})</span></span>
+          <span style="font-size:11px;color:var(--text3)">▼ Click to expand</span>
+        </div>
+        <div id="sps-pays-${sp.id}" style="display:none">
+          ${pays.length?`${payModeSummary?`<div style="padding:8px 18px;font-size:11px;color:var(--text2);background:var(--accent-light)">${payModeSummary}</div>`:''}
+          <div class="tbl-scroll"><table class="tbl">
+            <thead><tr><th>Sl</th><th>Date</th><th>Party</th><th>Mode</th><th>Amount</th><th>Ref</th><th>Notes</th></tr></thead>
+            <tbody>${payRows}</tbody>
+            <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="4" style="text-align:right">Total</td><td class="price-tag">${fmtMoney(totPay)}</td><td colspan="2"></td></tr></tfoot>
+          </table></div>`:'<div style="padding:16px;font-size:12px;color:var(--text2);text-align:center">No payments collected in this period</div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSection(id,headerEl){
+  const el=document.getElementById(id);if(!el)return;
+  const show=el.style.display==='none';
+  el.style.display=show?'block':'none';
+  const arrow=headerEl.querySelector('span:last-child');
+  if(arrow)arrow.textContent=show?'▲ Click to collapse':'▼ Click to expand';
+}
+
+function toggleTourDetail(id,rowEl){
+  const el=document.getElementById(id);if(!el)return;
+  el.style.display=el.style.display==='none'?'table-row':'none';
+}
+
+function exportAutoTour(spId,tourIdx,from,to){
+  const tours=computeAutoTours(spId,from,to);
+  const t=tours[tourIdx];if(!t)return;
+  const sp=SALESPERSONS.find(s=>s.id===spId)||{name:'Unknown'};
+  const data={
+    salesperson:sp.name,
+    state:t.state,
+    cities:t.cities,
+    fromDate:t.fromDate,
+    toDate:t.toDate,
+    days:t.days,
+    totalVisits:t.totalVisits,
+    completed:t.completed,
+    orders:t.orders,
+    orderValue:t.orderValue,
+    visits:t.visits.map(v=>{
+      const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',city:'?'};
+      return{party:party.name,city:party.city,date:v.date,checkIn:v.checkIn,checkOut:v.checkOut,status:v.status,orderValue:orderValue(v),feedback:v.feedback||''};
+    }),
+    exportedOn:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`tour-${sp.name.split(' ')[0]}-${t.state}-${t.fromDate}.json`;a.click();
+  showToast('Tour data exported');
 }
 
 /* ════════════════════════════════════════════════════════════
