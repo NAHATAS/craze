@@ -2746,12 +2746,13 @@ function refreshSPSummary(){
   if(!sps.length){document.getElementById('sps-content').innerHTML='<div style="padding:24px;text-align:center;color:var(--text2)">No salespersons found.</div>';return;}
 
   document.getElementById('sps-content').innerHTML=sps.map(sp=>{
-    const spVisits=visitsArr().filter(v=>v.spId===sp.id&&v.date>=from&&v.date<=to);
-    const completed=spVisits.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut);
+    const allSpVisits=visitsArr().filter(v=>v.spId===sp.id&&v.date>=from&&v.date<=to);
+    const spVisits=allSpVisits.filter(v=>v.checkIn); // only visits where SP actually checked in
+    const completed=spVisits.filter(v=>['order','noorder'].includes(v.status)&&v.checkOut);
     const orders=spVisits.filter(v=>v.status==='order');
     const totOV=orders.reduce((s,v)=>s+orderValue(v),0);
     const convPct=completed.length?Math.round(orders.length/completed.length*100):0;
-    const pays=spVisits.filter(v=>v.payment);
+    const pays=allSpVisits.filter(v=>v.payment);
     const totPay=pays.reduce((s,v)=>s+v.payment.amount,0);
     const autoTours=computeAutoTours(sp.id,from,to);
 
@@ -2822,7 +2823,7 @@ function refreshSPSummary(){
 
       <!-- Metrics -->
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:14px 18px;border-bottom:1px solid var(--border)">
-        ${mc(spVisits.length,'Total visits')}
+        ${mc(spVisits.length,'Visits done')}
         ${mc(completed.length,'Completed')}
         ${mc(orders.length,'Orders')}
         ${mc(convPct+'%','Conversion',convPct>=50?'var(--accent)':'var(--red)')}
