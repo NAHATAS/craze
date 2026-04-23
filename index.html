@@ -912,6 +912,9 @@ const showToast=msg=>{const t=document.createElement('div');t.textContent=msg;t.
 
 /* Global error handler for async Firebase operations */
 window.addEventListener('unhandledrejection',e=>{
+  const msg=e.reason?.message||String(e.reason||'');
+  // Suppress service worker errors — not user-facing
+  if(msg.includes('ServiceWorker')||msg.includes('service worker')||msg.includes('invalid state')){e.preventDefault();console.log('SW error suppressed:',msg);return;}
   console.error('Unhandled async error:',e.reason);
   setSyncStatus('err','Error');
   showToast('Something went wrong: '+(e.reason?.message||'Network error'));
@@ -3359,10 +3362,11 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').then(reg => {
       _swRegistration = reg;
       /* Check for updates every 60 seconds */
-      setInterval(() => reg.update(), 60000);
+      setInterval(() => { try{reg.update();}catch(e){} }, 60000);
       /* New SW waiting → show update banner */
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
+        if(!newSW)return;
         newSW.addEventListener('statechange', () => {
           if(newSW.state === 'installed' && navigator.serviceWorker.controller){
             document.getElementById('update-banner').style.display = 'block';
