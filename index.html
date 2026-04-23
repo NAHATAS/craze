@@ -1626,9 +1626,13 @@ function renderDashboard(){
   const prevState=document.getElementById('df-state')?.value||'all';
   const prevSP=document.getElementById('df-sp')?.value||'all';
   const prevStatus=document.getElementById('df-status')?.value||'all';
+  const prevFrom=document.getElementById('df-from')?.value||today();
+  const prevTo=document.getElementById('df-to')?.value||today();
+  const isRange=prevFrom!==prevTo;
+  const dateLabel=isRange?`${fmtDate(prevFrom)} – ${fmtDate(prevTo)}`:new Date(prevFrom+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
   const va=visitsArr();
-  let todayV=va.filter(v=>v.date===today());
+  let todayV=va.filter(v=>v.date>=prevFrom&&v.date<=prevTo);
 
   // Apply filters
   if(prevState!=='all') todayV=todayV.filter(v=>{const p=PARTIES.find(p=>p.id===v.partyId);return p&&p.state===prevState;});
@@ -1700,18 +1704,22 @@ function renderDashboard(){
   setViewHTML(`<div class="admin-shell">
     ${pendingBanner}
     <div class="admin-topbar">
-      <div><div class="admin-title">Daily Report</div><div class="admin-sub">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+      <div><div class="admin-title">Visit Report</div><div class="admin-sub">${dateLabel}</div></div>
       <div class="filter-row" id="dash-filters">
+        <input type="date" class="filter-select" id="df-from" value="${prevFrom}" onchange="renderDashboard()">
+        <span style="font-size:13px;color:var(--text2)">to</span>
+        <input type="date" class="filter-select" id="df-to" value="${prevTo}" onchange="renderDashboard()">
+        <button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('df-from').value=today();document.getElementById('df-to').value=today();renderDashboard()">Today</button>
         <select class="filter-select" id="df-state" onchange="renderDashboard()"><option value="all">All states</option>${[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort().map(s=>`<option>${esc(s)}</option>`).join('')}</select>
         <select class="filter-select" id="df-sp" onchange="renderDashboard()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
         <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option></select>
       </div>
     </div>
     <div class="metrics-row">
-      ${mc(todayV.length,'Visits today','All salespersons')}
+      ${mc(todayV.length,isRange?'Total visits':'Visits today',prevSP!=='all'?(SALESPERSONS.find(s=>s.id===prevSP)||{name:'SP'}).name:'All salespersons')}
       ${mc(todayV.filter(v=>['order','noorder'].includes(v.status)).length,'Completed',todayOrd.length+' with orders')}
-      ${mc(fmtMoney(todayOrdVal),'Order value today',todayOrd.length+' orders','var(--accent)')}
-      ${mc(fmtMoney(todayPay),'Collected today',todayV.filter(v=>v.payment).length+' payments','var(--teal)')}
+      ${mc(fmtMoney(todayOrdVal),isRange?'Order value':'Order value today',todayOrd.length+' orders','var(--accent)')}
+      ${mc(fmtMoney(todayPay),isRange?'Collected':'Collected today',todayV.filter(v=>v.payment).length+' payments','var(--teal)')}
     </div>
     <div class="admin-grid">
       <div>
@@ -1735,6 +1743,8 @@ function renderDashboard(){
   </div>`);
 
   // Restore filter selections after DOM rebuild
+  const dfFrom=document.getElementById('df-from');if(dfFrom)dfFrom.value=prevFrom;
+  const dfTo=document.getElementById('df-to');if(dfTo)dfTo.value=prevTo;
   const dfState=document.getElementById('df-state');if(dfState)dfState.value=prevState;
   const dfSP=document.getElementById('df-sp');if(dfSP)dfSP.value=prevSP;
   const dfStatus=document.getElementById('df-status');if(dfStatus)dfStatus.value=prevStatus;
@@ -2668,6 +2678,38 @@ function renderSettingsView(){
       </div>
     </div>
 
+    <!-- Selective Delete -->
+    <div class="card" style="margin-top:16px;border:1.5px solid var(--amber)">
+      <div class="card-header" style="background:var(--amber-light);color:var(--amber)">🗑 Delete selected data</div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:13px;color:var(--text2);line-height:1.7">Delete specific data by salesperson and/or date range. Useful for cleaning up test data or removing a specific SP's records.</div>
+        <div class="form-row">
+          <div><label class="form-label">Salesperson</label>
+            <select class="form-input" id="sdel-sp" style="margin-bottom:0">
+              <option value="all">All SPs</option>
+              ${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div><label class="form-label">Data type</label>
+            <select class="form-input" id="sdel-type" style="margin-bottom:0" onchange="toggleSdelDates()">
+              <option value="visits">Visits & orders</option>
+              <option value="tours">Tours & expenses</option>
+              <option value="both">Visits + Tours</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" id="sdel-dates-row">
+          <div><label class="form-label">From date (optional)</label><input type="date" class="form-input" id="sdel-from" style="margin-bottom:0"></div>
+          <div><label class="form-label">To date (optional)</label><input type="date" class="form-input" id="sdel-to" style="margin-bottom:0"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-outline" onclick="previewSelectiveDelete()">Preview what will be deleted</button>
+          <button class="btn btn-amber" onclick="executeSelectiveDelete()" id="sdel-exec-btn" style="display:none">Delete now</button>
+          <span id="sdel-preview" style="font-size:12px;color:var(--text2)"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- Reset Data -->
     <div class="card" style="margin-top:16px;border:1.5px solid var(--red)">
       <div class="card-header" style="background:var(--red-light);color:var(--red)">⚠ Reset data</div>
@@ -2759,6 +2801,86 @@ async function resetAllData(){
     await UPDATE(REF('/'),{salespersons:null,parties:null,products:null,visits:null,tours:null,targets:null,pricelists:null});
     setSyncStatus('ok','Live');showToast('All data deleted');renderSettingsView();
   }catch(e){setSyncStatus('err','Error');showToast('Delete failed: '+e.message);}
+}
+
+/* ── SELECTIVE DELETE ── */
+function toggleSdelDates(){
+  // dates only relevant for visits
+  const type=document.getElementById('sdel-type')?.value;
+  document.getElementById('sdel-dates-row').style.display=(type==='tours')?'none':'grid';
+}
+
+let _sdelData={visitIds:[],tourIds:[]};
+
+function previewSelectiveDelete(){
+  const spF=document.getElementById('sdel-sp')?.value||'all';
+  const type=document.getElementById('sdel-type')?.value||'visits';
+  const from=document.getElementById('sdel-from')?.value||'';
+  const to=document.getElementById('sdel-to')?.value||'';
+
+  _sdelData={visitIds:[],tourIds:[]};
+  let vCount=0,tCount=0;
+
+  if(type==='visits'||type==='both'){
+    const filtered=visitsArr().filter(v=>{
+      if(spF!=='all'&&v.spId!==spF)return false;
+      if(from&&v.date<from)return false;
+      if(to&&v.date>to)return false;
+      return true;
+    });
+    _sdelData.visitIds=filtered.map(v=>v.id);
+    vCount=filtered.length;
+  }
+
+  if(type==='tours'||type==='both'){
+    const filtered=toursArr().filter(t=>{
+      if(spF!=='all'&&t.spId!==spF)return false;
+      if(from&&t.toDate<from)return false;
+      if(to&&t.fromDate>to)return false;
+      return true;
+    });
+    _sdelData.tourIds=filtered.map(t=>t.id);
+    tCount=filtered.length;
+  }
+
+  const total=vCount+tCount;
+  const spName=spF==='all'?'all SPs':(SALESPERSONS.find(s=>s.id===spF)||{name:'?'}).name;
+  const dateStr=from||to?` (${from?fmtDate(from):'start'} – ${to?fmtDate(to):'now'})`:'';
+  let summary=[];
+  if(vCount>0) summary.push(`${vCount} visits`);
+  if(tCount>0) summary.push(`${tCount} tours`);
+
+  const prevEl=document.getElementById('sdel-preview');
+  const execBtn=document.getElementById('sdel-exec-btn');
+  if(total===0){
+    prevEl.innerHTML='<span style="color:var(--accent)">No matching records found.</span>';
+    execBtn.style.display='none';
+  } else {
+    prevEl.innerHTML=`<span style="color:var(--red);font-weight:500">⚠ ${summary.join(' + ')} for ${esc(spName)}${dateStr} will be permanently deleted</span>`;
+    execBtn.style.display='inline-flex';
+  }
+}
+
+async function executeSelectiveDelete(){
+  const total=_sdelData.visitIds.length+_sdelData.tourIds.length;
+  if(!total)return;
+  if(!confirm(`Permanently delete ${total} records? This cannot be undone.`))return;
+
+  setSyncStatus('wait','Deleting...');
+  try{
+    const updates={};
+    _sdelData.visitIds.forEach(id=>{updates['visits/'+id]=null;});
+    _sdelData.tourIds.forEach(id=>{updates['tours/'+id]=null;});
+    await UPDATE(REF('/'),updates);
+    setSyncStatus('ok','Live');
+    showToast(`${total} records deleted`);
+    _sdelData={visitIds:[],tourIds:[]};
+    document.getElementById('sdel-preview').innerHTML='<span style="color:var(--accent)">Done!</span>';
+    document.getElementById('sdel-exec-btn').style.display='none';
+  }catch(e){
+    setSyncStatus('err','Error');
+    showToast('Delete failed: '+e.message);
+  }
 }
 
 function openAddSPModal(){openSPModal(null);}
