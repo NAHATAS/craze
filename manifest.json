@@ -1,8 +1,9 @@
 {
   "name": "Craze Hosiery Pvt. Ltd.",
-  "short_name": "Craze Hosiery",
+  "short_name": "Craze",
   "description": "Sales visit tracker for Craze Hosiery field team",
-  "start_url": "/",
+  "start_url": "/craze/",
+  "scope": "/craze/",
   "display": "standalone",
   "background_color": "#F5F4F0",
   "theme_color": "#1A5C3A",
@@ -27,13 +28,13 @@
       "name": "My Visits",
       "short_name": "Visits",
       "description": "View today's visits",
-      "url": "/?view=mobile"
+      "url": "/craze/?view=mobile"
     },
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Admin dashboard",
-      "url": "/?view=dashboard"
+      "url": "/craze/?view=dashboard"
     }
   ]
 }
