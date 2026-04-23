@@ -538,9 +538,13 @@ input,textarea,select{font-family:var(--font)}
     <div><label class="form-label">State *</label>
       <select class="form-input" id="pm-state">
         <option value="">Select</option>
-        <option>Gujarat</option><option>Maharashtra</option><option>Rajasthan</option>
-        <option>Delhi</option><option>Uttar Pradesh</option><option>West Bengal</option>
-        <option>Karnataka</option><option>Tamil Nadu</option><option>Madhya Pradesh</option><option>Other</option>
+        <option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option>
+        <option>Chhattisgarh</option><option>Delhi</option><option>Goa</option>
+        <option>Gujarat</option><option>Haryana</option><option>Jharkhand</option>
+        <option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option>
+        <option>Maharashtra</option><option>Odisha</option><option>Punjab</option>
+        <option>Rajasthan</option><option>Tamil Nadu</option><option>Telangana</option>
+        <option>Uttar Pradesh</option><option>West Bengal</option><option>Other</option>
       </select>
     </div>
   </div>
@@ -733,6 +737,17 @@ input,textarea,select{font-family:var(--font)}
     <div><label class="form-label" data-t="City / Area *">City / Area *</label><input type="text" class="form-input" id="npv-city" placeholder="City or area" data-t-ph="City or area"></div>
     <div><label class="form-label" data-t="Phone">Phone</label><input type="text" class="form-input" id="npv-phone" placeholder="Phone number" inputmode="tel" data-t-ph="Phone number"></div>
   </div>
+  <label class="form-label" data-t="State">State</label>
+  <select class="form-input" id="npv-state" style="margin-bottom:12px">
+    <option value="">Select state</option>
+    <option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option>
+    <option>Chhattisgarh</option><option>Delhi</option><option>Goa</option>
+    <option>Gujarat</option><option>Haryana</option><option>Jharkhand</option>
+    <option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option>
+    <option>Maharashtra</option><option>Odisha</option><option>Punjab</option>
+    <option>Rajasthan</option><option>Tamil Nadu</option><option>Telangana</option>
+    <option>Uttar Pradesh</option><option>West Bengal</option><option>Other</option>
+  </select>
   <div class="gps-indicator"><div class="pulse-dot"></div> <span data-t="GPS will be captured on check-in">GPS will be captured on check-in</span></div>
   <button class="btn btn-green btn-full" onclick="submitNewPartyVisit()" data-t="Create party & Check in">Create party & Check in</button>
   <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('new-party-visit-modal')" data-t="Cancel">Cancel</button>
@@ -869,6 +884,7 @@ function t(str){
 }
 function isHindi(){return !!(currentSP&&currentSP.language==='hi');}
 let _listeners=[];
+let _dashMap=null; /* Leaflet map reference — destroy before re-creating */
 
 /* ── IN-MEMORY CACHE (synced from Firebase) ── */
 let SALESPERSONS=[], PARTIES=[], PRODUCTS=[], VISITS={}, TOURS={}, TARGETS={}, PRICELISTS={};
@@ -893,6 +909,13 @@ const esc=s=>{const d=document.createElement('div');d.textContent=String(s||'');
 const closeModal=id=>document.getElementById(id).classList.remove('open');
 const openModal=id=>document.getElementById(id).classList.add('open');
 const showToast=msg=>{const t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1814;color:white;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;white-space:nowrap;max-width:90vw;text-align:center';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2500)};
+
+/* Global error handler for async Firebase operations */
+window.addEventListener('unhandledrejection',e=>{
+  console.error('Unhandled async error:',e.reason);
+  setSyncStatus('err','Error');
+  showToast('Something went wrong: '+(e.reason?.message||'Network error'));
+});
 
 function orderValue(v){
   return(v.orderItems||[]).reduce((s,i)=>{
@@ -1024,7 +1047,8 @@ function doLogout(){
   _listeners.forEach(({path,fn})=>{try{OFF(REF(path),fn)}catch(e){}});
   _listeners=[];
   currentRole=null;currentSP=null;
-  VISITS={};TOURS={};
+  VISITS={};TOURS={};SALESPERSONS=[];PARTIES=[];PRODUCTS=[];TARGETS={};PRICELISTS={};
+  _afterLoaded=false;
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('admin-pwd').value='';
@@ -1099,13 +1123,13 @@ function subscribeData(){
     _listeners.push({path,fn});
   };
 
-  sub('salespersons',d=>{SALESPERSONS=Object.values(d);check();refreshAll();});
-  sub('parties',d=>{PARTIES=Object.values(d);check();refreshAll();});
-  sub('products',d=>{PRODUCTS=Object.values(d);check();refreshAll();});
-  sub('visits',d=>{VISITS=d;check();refreshAll();});
-  sub('tours',d=>{TOURS=d||{};refreshAll();});
-  sub('targets',d=>{TARGETS=d||{};refreshAll();});
-  sub('pricelists',d=>{PRICELISTS=d||{};refreshAll();});
+  sub('salespersons',d=>{SALESPERSONS=Object.values(d);check();if(_afterLoaded)refreshAll();});
+  sub('parties',d=>{PARTIES=Object.values(d);check();if(_afterLoaded)refreshAll();});
+  sub('products',d=>{PRODUCTS=Object.values(d);check();if(_afterLoaded)refreshAll();});
+  sub('visits',d=>{VISITS=d;check();if(_afterLoaded)refreshAll();});
+  sub('tours',d=>{TOURS=d||{};if(_afterLoaded)refreshAll();});
+  sub('targets',d=>{TARGETS=d||{};if(_afterLoaded)refreshAll();});
+  sub('pricelists',d=>{PRICELISTS=d||{};if(_afterLoaded)refreshAll();});
 }
 
 let _afterLoaded=false;
@@ -1540,6 +1564,7 @@ function openNewPartyVisitModal(){
   document.getElementById('npv-name').value='';
   document.getElementById('npv-city').value='';
   document.getElementById('npv-phone').value='';
+  document.getElementById('npv-state').value='';
   openModal('new-party-visit-modal');
 }
 
@@ -1547,6 +1572,7 @@ async function submitNewPartyVisit(){
   const name=document.getElementById('npv-name').value.trim();
   const city=document.getElementById('npv-city').value.trim();
   const phone=document.getElementById('npv-phone').value.trim();
+  const npvState=document.getElementById('npv-state').value;
   if(!name){showToast(t('Party name is required'));return}
   if(!city){showToast(t('City is required'));return}
 
@@ -1574,7 +1600,7 @@ async function submitNewPartyVisit(){
   try{
     // 1. Create the party
     const partyId=uid();
-    const partyData={id:partyId,name,city,state:'',contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:'',grade:'',source:'app',approved:false};
+    const partyData={id:partyId,name,city,state:npvState,contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:'',grade:'',source:'app',approved:false};
     await SET(REF('parties/'+partyId),partyData);
 
     // 2. Create the visit and auto-check-in
@@ -1723,7 +1749,9 @@ function renderDashboard(){
       mapEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px">No GPS data for today\'s visits</div>';
       return;
     }
+    if(_dashMap){try{_dashMap.remove();}catch(e){}_dashMap=null;}
     const map=L.map('gps-map',{scrollWheelZoom:false});
+    _dashMap=map;
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
     const bounds=[];
     gpsVisits.forEach(v=>{
@@ -1745,7 +1773,16 @@ function renderDashboard(){
    ADMIN — TOURS
    ════════════════════════════════════════════════════════════ */
 function renderTours(){
-  const ta=toursArr().sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
+  // Preserve filter selections before DOM rebuild
+  const prevSP=document.getElementById('tour-sp-f')?.value||'all';
+  const prevSt=document.getElementById('tour-st-f')?.value||'all';
+
+  let ta=toursArr().sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
+
+  // Apply filters
+  if(prevSP!=='all') ta=ta.filter(t=>t.spId===prevSP);
+  if(prevSt!=='all') ta=ta.filter(t=>t.status===prevSt);
+
   const roiRows=ta.map((t,idx)=>{
     const sp=SALESPERSONS.find(s=>s.id===t.spId)||FALLBACK_SP;
     const tv=tourVisits(t);const orders=tv.filter(v=>v.status==='order').length;
@@ -1816,6 +1853,9 @@ function renderTours(){
     </div>
     ${ta.map(t=>buildTourCardHTML(t)).join('')}
   </div>`);
+  // Restore tour filter selections
+  const tSpF=document.getElementById('tour-sp-f');if(tSpF)tSpF.value=prevSP;
+  const tStF=document.getElementById('tour-st-f');if(tStF)tStF.value=prevSt;
 }
 
 function buildTourCardHTML(t){
@@ -2176,7 +2216,7 @@ function refreshPR(){
   let filtered=visitsArr().filter(v=>v.status==='order'&&v.date>=from&&v.date<=to);
   if(spF!=='all')filtered=filtered.filter(v=>v.spId===spF);
   const pm={};
-  filtered.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!pm[i.prodId])pm[i.prodId]={prod:p,qty:0,value:0,orders:0};pm[i.prodId].qty+=i.qty;pm[i.prodId].value+=p.price*i.qty;pm[i.prodId].orders++;});});
+  filtered.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!pm[i.prodId])pm[i.prodId]={prod:p,qty:0,value:0,orders:0};pm[i.prodId].qty+=i.qty;pm[i.prodId].value+=getProductPrice(i.prodId,v.pricelistId||'')*i.qty;pm[i.prodId].orders++;});});
   const pl=Object.values(pm).sort((a,b)=>b.qty-a.qty);
   const totQty=pl.reduce((s,x)=>s+x.qty,0),totVal=pl.reduce((s,x)=>s+x.value,0);
   const mc=(num,lbl)=>`<div class="metric-card"><div class="metric-num">${num}</div><div class="metric-lbl">${lbl}</div></div>`;
@@ -2189,7 +2229,7 @@ function refreshPR(){
   let prSlNo=0;
   SALESPERSONS.forEach(sp=>{
     const sv=filtered.filter(v=>v.spId===sp.id);const sm={};
-    sv.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!sm[i.prodId])sm[i.prodId]={prod:p,qty:0,value:0,orders:0};sm[i.prodId].qty+=i.qty;sm[i.prodId].value+=p.price*i.qty;sm[i.prodId].orders++;});});
+    sv.forEach(v=>{(v.orderItems||[]).forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.prodId);if(!p||catF!=='all'&&p.category!==catF)return;if(!sm[i.prodId])sm[i.prodId]={prod:p,qty:0,value:0,orders:0};sm[i.prodId].qty+=i.qty;sm[i.prodId].value+=getProductPrice(i.prodId,v.pricelistId||'')*i.qty;sm[i.prodId].orders++;});});
     const sl=Object.values(sm).sort((a,b)=>b.qty-a.qty);
     prSlNo++;
     if(!sl.length){const tr=document.createElement('tr');tr.innerHTML=`<td style="font-weight:500;color:var(--text3);text-align:center">${prSlNo}</td><td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td><td colspan="5" style="color:var(--text3);font-size:12px">No orders in period</td>`;tbody.appendChild(tr);}
@@ -2713,7 +2753,7 @@ async function resetSelectedData(){
 
 async function resetAllData(){
   if(!confirm('⚠ DELETE ALL DATA?\n\nThis will permanently erase:\n• All salespersons\n• All parties\n• All products & pricelists\n• All visits & orders\n• All tours & expenses\n• All targets\n\nThis CANNOT be undone!'))return;
-  if(!confirm('Are you absolutely sure? Type OK to confirm.'))return;
+  if(prompt('Type DELETE to confirm')!=='DELETE'){showToast('Cancelled — type DELETE to confirm');return;}
   setSyncStatus('wait','Deleting everything...');
   try{
     await UPDATE(REF('/'),{salespersons:null,parties:null,products:null,visits:null,tours:null,targets:null,pricelists:null});
