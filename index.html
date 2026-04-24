@@ -2354,7 +2354,7 @@ function refreshMeCAContent(){
 
   const spRows=SALESPERSONS.map((sp,idx)=>{
     const sv=fv.filter(v=>v.spId===sp.id);const m=calcMeCA(sv);
-    const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order').length;
+    const totalVisits=sv.filter(v=>['order','noorder','feedback'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order').length;
     return`<div class="sp-meca-row">
       <div class="sp-meca-cell" style="text-align:center;font-weight:500;color:var(--text3)">${idx+1}</div>
       <div class="sp-meca-cell"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></div>
