@@ -156,6 +156,7 @@ input,textarea,select{font-family:var(--font)}
 .badge-feedback{background:var(--purple-light);color:var(--purple)}
 .badge-new{background:var(--teal-light);color:var(--teal)}
 .badge-state{background:var(--blue-light);color:var(--blue)}
+.badge-phone{background:var(--purple-light);color:var(--purple)}
 .reorder-badge{background:#FDF3E7;color:#B87333;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;border:1px solid #F0C68A;display:inline-flex;align-items:center;gap:3px}
 
 /* ── BUTTONS ── */
@@ -168,6 +169,7 @@ input,textarea,select{font-family:var(--font)}
 .btn-red{background:transparent;color:var(--red);border-color:var(--red)}
 .btn-blue{background:transparent;color:var(--blue);border-color:var(--blue)}
 .btn-teal{background:var(--teal);color:white;border-color:var(--teal)}
+.btn-purple{background:var(--purple);color:white;border-color:var(--purple)}
 .btn-full{width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600;justify-content:center}
 
 /* ── TABLES ── */
@@ -754,6 +756,42 @@ input,textarea,select{font-family:var(--font)}
 </div>
 </div>
 
+<!-- PHONE ORDER MODAL (SP) -->
+<div class="modal-overlay" id="phone-order-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title" data-t="Phone Order">📞 Phone Order</div>
+  <div class="modal-sub" data-t="Record an order received over phone">Record an order received over phone</div>
+
+  <label class="form-label" data-t="Select party">Select party</label>
+  <input type="text" class="form-input" id="po-party-search" placeholder="Search party or type new name..." data-t-ph="Search party or type new name..." oninput="filterPoParties()" autocomplete="off">
+  <div id="po-party-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);margin-bottom:12px;display:none"></div>
+  <div id="po-selected-party" style="display:none;background:var(--purple-light);border:1px solid #C9BFE8;border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:13px">
+    <strong id="po-selected-name"></strong> <span id="po-selected-meta" style="color:var(--text2);font-size:11px"></span>
+    <button class="icon-btn" style="float:right;font-size:10px;padding:2px 8px" onclick="poClearParty()">Change</button>
+  </div>
+
+  <div id="po-new-party-fields" style="display:none;background:var(--teal-light);border:1px solid #9FE1CB;border-radius:var(--r);padding:10px 12px;margin-bottom:12px">
+    <div style="font-size:11px;font-weight:600;color:var(--teal);margin-bottom:8px">NEW PARTY — fill below</div>
+    <div class="form-row">
+      <div><label class="form-label">City *</label><input type="text" class="form-input" id="po-new-city" placeholder="City" style="margin-bottom:0"></div>
+      <div><label class="form-label">Phone</label><input type="text" class="form-input" id="po-new-phone" placeholder="Phone" style="margin-bottom:0"></div>
+    </div>
+  </div>
+
+  <div id="po-order-section" style="display:none">
+    <label class="form-label" data-t="Order items">Order items</label>
+    <div id="po-picker-wrap"></div>
+  </div>
+
+  <label class="form-label" data-t="Notes">Notes</label>
+  <textarea class="form-input" style="resize:vertical;min-height:50px" id="po-notes" placeholder="Call notes / delivery instructions..."></textarea>
+
+  <button class="btn btn-purple btn-full" onclick="submitPhoneOrder()" data-t="Submit phone order">Submit phone order</button>
+  <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('phone-order-modal')" data-t="Cancel">Cancel</button>
+</div>
+</div>
+
 <!-- CHANGE ADMIN PASSWORD MODAL -->
 <div class="modal-overlay" id="pwd-modal">
 <div class="modal">
@@ -767,7 +805,6 @@ input,textarea,select{font-family:var(--font)}
   <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('pwd-modal')">Cancel</button>
 </div>
 </div>
-
 <script>
 /* ═══════════════════════════════════════════════════════════════
    CRAZE HOSIERY — MAIN APP SCRIPT
@@ -849,7 +886,6 @@ const HI={
   'Search by name, city or state...':'नाम, शहर या राज्य से खोजें...',
   'Add to plan':'योजना में जोड़ें',
   '(already planned)':'(पहले से योजनाबद्ध)',
-  'New party visit':'नई पार्टी विज़िट',
   'Add a new party and check in immediately':'नई पार्टी जोड़ें और तुरंत चेक इन करें',
   'Party / Firm name *':'पार्टी / फर्म का नाम *',
   'Full firm name':'पूरा फर्म नाम',
@@ -876,6 +912,17 @@ const HI={
   'Pricelist:':'मूल्य सूची:',
   'Order total':'ऑर्डर कुल',
   'No products in master. Admin needs to add products first.':'कोई उत्पाद नहीं है। एडमिन से उत्पाद जोड़ने के लिए कहें।',
+  'Phone Order':'फोन ऑर्डर',
+  '📞 Phone Order':'📞 फोन ऑर्डर',
+  'Record an order received over phone':'फोन पर मिला ऑर्डर दर्ज करें',
+  'Select party':'पार्टी चुनें',
+  'Search party or type new name...':'पार्टी खोजें या नया नाम टाइप करें...',
+  'Add new party:':'नई पार्टी जोड़ें:',
+  'Submit phone order':'फोन ऑर्डर जमा करें',
+  'Phone order recorded':'फोन ऑर्डर दर्ज हुआ',
+  'Add at least one product':'कम से कम एक उत्पाद जोड़ें',
+  'Please select or create a party':'पार्टी चुनें या नई बनाएं',
+  'Phone Orders':'फोन ऑर्डर',
 };
 
 function t(str){
@@ -1242,6 +1289,9 @@ function renderMobileView(){
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       ${t('New party visit')}
     </button>
+    <button class="add-btn" style="border-color:var(--purple);color:var(--purple);background:var(--purple-light)" onclick="openPhoneOrderModal()">
+      📞 ${t('Phone Order')}
+    </button>
     <button class="add-btn wa" onclick="openWASummary()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 13A6 6 0 107 1a6 6 0 000 12z" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3L9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       ${t('WhatsApp day summary')}
@@ -1254,13 +1304,17 @@ function renderMobileView(){
 function buildVisitCardHTML(v){
   const party=PARTIES.find(p=>p.id===v.partyId)||{name:'Unknown',city:'',phone:'',outstanding:0,grade:''};
   const isNew=isNewClient(v.partyId,v.date);
+  const isPhone=v.type==='phone_order';
   const ov=orderValue(v);
   const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
   const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
   const bm={planned:'badge-planned',active:'badge-active',order:'badge-order',noorder:'badge-noorder',rescheduled:'badge-resched',feedback:'badge-feedback'};
 
   let meta='';
-  if(v.status==='planned') meta=`${t('Planned')} ${fmtTime(v.plannedTime)}`;
+  if(isPhone){
+    meta=`<span style="color:var(--purple)">📞 ${t('Phone Order')} · ${fmtTime(v.checkIn)}</span>`;
+  }
+  else if(v.status==='planned') meta=`${t('Planned')} ${fmtTime(v.plannedTime)}`;
   else if(v.status==='active'){
     const gpsStr=v.gps&&v.gps.lat?` · <a href="https://maps.google.com/?q=${v.gps.lat},${v.gps.lng}" target="_blank" style="color:var(--accent);text-decoration:underline">${v.gps.lat}, ${v.gps.lng}</a>`:(v.gps?` · ${t('GPS marked')}`:'');
     meta=`<span style="color:var(--accent)">${t('In since')} ${fmtTime(v.checkIn)}${gpsStr}</span>`;
@@ -1274,24 +1328,28 @@ function buildVisitCardHTML(v){
   const payInfo=v.payment?`<span style="color:var(--teal);margin-left:6px">💰 ${esc(v.payment.mode)} ${fmtMoney(v.payment.amount)}</span>`:'';
 
   let actions='';
-  if(v.status==='planned'){
-    actions=`<div class="visit-actions">
-      <button class="btn btn-green" onclick="doCheckIn('${v.id}')">${t('Check In')}</button>
-      <button class="btn btn-amber" onclick="openReschedModal('${v.id}')">${t('Reschedule')}</button>
-    </div>`;
-  } else if(v.status==='active'){
-    actions=`<div class="visit-actions">
-      <button class="btn btn-blue" onclick="openCheckoutModal('${v.id}')">${t('Check Out + Feedback')}</button>
-    </div>`;
+  if(!isPhone){
+    if(v.status==='planned'){
+      actions=`<div class="visit-actions">
+        <button class="btn btn-green" onclick="doCheckIn('${v.id}')">${t('Check In')}</button>
+        <button class="btn btn-amber" onclick="openReschedModal('${v.id}')">${t('Reschedule')}</button>
+      </div>`;
+    } else if(v.status==='active'){
+      actions=`<div class="visit-actions">
+        <button class="btn btn-blue" onclick="openCheckoutModal('${v.id}')">${t('Check Out + Feedback')}</button>
+      </div>`;
+    }
   }
 
   const feedback=(v.feedback&&['order','noorder','feedback'].includes(v.status))?
     `<div class="visit-done">📝 ${esc(v.feedback)}${v.nextVisit?' · Next: '+fmtDate(v.nextVisit):''}</div>`:'';
 
-  return`<div class="visit-card${v.status==='active'?' active-visit':''}">
+  const phoneBadge=isPhone?` <span class="badge badge-phone" style="font-size:10px;padding:1px 6px">📞 ${t('Phone')||'Phone'}</span>`:'';
+
+  return`<div class="visit-card${v.status==='active'?' active-visit':''}"${isPhone?' style="border-left:3px solid var(--purple);border-radius:0 var(--r-lg) var(--r-lg) 0"':''}>
     <div class="visit-card-top">
       <div style="flex:1;min-width:0">
-        <div class="visit-name">${esc(party.name)}${party.grade?` <span class="badge" style="background:${gradeBg[party.grade]||'var(--surface2)'};color:${gradeColors[party.grade]||'var(--text2)'};font-size:9px;padding:1px 6px;font-weight:600">${esc(party.grade)}</span>`:''}${isNew?` <span class="badge badge-new" style="font-size:10px;padding:1px 6px">${t('New')}</span>`:''}</div>
+        <div class="visit-name">${esc(party.name)}${party.grade?` <span class="badge" style="background:${gradeBg[party.grade]||'var(--surface2)'};color:${gradeColors[party.grade]||'var(--text2)'};font-size:9px;padding:1px 6px;font-weight:600">${esc(party.grade)}</span>`:''}${isNew?` <span class="badge badge-new" style="font-size:10px;padding:1px 6px">${t('New')}</span>`:''}${phoneBadge}</div>
         <div class="visit-meta">${meta}</div>
         ${ov>0?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Order: <span style="font-weight:500;color:var(--accent)">${fmtMoney(ov)}</span>${payInfo}</div>`:payInfo?`<div style="font-size:11px">${payInfo}</div>`:''}
       </div>
@@ -1320,7 +1378,6 @@ async function doCheckIn(id){
     gpsData.lat=+pos.coords.latitude.toFixed(6);
     gpsData.lng=+pos.coords.longitude.toFixed(6);
     gpsData.accuracy=Math.round(pos.coords.accuracy);
-    // map pin positions (for dashboard visual map)
     gpsData.x=((gpsData.lng+180)/360)*100;
     gpsData.y=((90-gpsData.lat)/180)*100;
   }catch(e){
@@ -1431,7 +1488,6 @@ async function submitCheckout(){
     const amt=parseFloat(document.getElementById('co-pay-amount').value)||0;
     if(amt<=0){showToast(t('Enter a valid payment amount'));return}
     upd.payment={mode:coPayMode,amount:amt,ref:document.getElementById('co-pay-ref').value,notes:document.getElementById('co-pay-notes').value,date:today(),spId:v.spId,partyId:v.partyId};
-    // update outstanding
     const party=PARTIES.find(p=>p.id===v.partyId);
     if(party){await UPDATE(REF('parties/'+party.id),{outstanding:Math.max(0,(party.outstanding||0)-amt)});}
   }
@@ -1563,6 +1619,191 @@ async function submitAddVisit(){
   showToast(_avSelected.size===1?t('1 visit added to plan'):`${_avSelected.size} ${isHindi()?'विज़िट योजना में जोड़ी':'visits added to plan'}`);
 }
 
+/* ══════════════════════════════════════════════════════════
+   PHONE ORDER (SP records order taken over phone)
+   ══════════════════════════════════════════════════════════ */
+let _poSelectedPartyId=null;
+let _poNewPartyName='';
+let _poPickerItems={};
+let _poPricelistId='';
+
+function openPhoneOrderModal(){
+  _poSelectedPartyId=null;
+  _poNewPartyName='';
+  _poPickerItems={};
+  _poPricelistId='';
+  document.getElementById('po-party-search').value='';
+  document.getElementById('po-party-search').style.display='block';
+  document.getElementById('po-notes').value='';
+  document.getElementById('po-selected-party').style.display='none';
+  document.getElementById('po-new-party-fields').style.display='none';
+  document.getElementById('po-order-section').style.display='none';
+  document.getElementById('po-party-list').style.display='none';
+  document.getElementById('po-new-city').value='';
+  document.getElementById('po-new-phone').value='';
+  openModal('phone-order-modal');
+}
+
+function filterPoParties(){
+  const q=(document.getElementById('po-party-search').value||'').trim().toLowerCase();
+  const list=document.getElementById('po-party-list');
+  if(!q){list.style.display='none';return;}
+  const myParties=PARTIES.filter(p=>p.spId===currentSP.id);
+  const matches=myParties.filter(p=>
+    p.name.toLowerCase().includes(q)||
+    (p.city||'').toLowerCase().includes(q)
+  ).slice(0,8);
+  const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
+  const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
+  let html=matches.map(p=>{
+    const gradeHtml=p.grade?` <span style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600">${esc(p.grade)}</span>`:'';
+    return`<div style="padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="poSelectParty('${p.id}')" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
+      <div style="font-size:13px;font-weight:500">${esc(p.name)}${gradeHtml}</div>
+      <div style="font-size:11px;color:var(--text2)">${esc(p.city||'')}${p.state?', '+esc(p.state):''}</div>
+    </div>`;
+  }).join('');
+  const qEsc=esc(q);
+  html+=`<div style="padding:8px 12px;border-top:2px dashed var(--teal);cursor:pointer;background:var(--teal-light)" onclick="poCreateNewFromSearch()" onmouseover="this.style.background='#D5EDE2'" onmouseout="this.style.background='var(--teal-light)'">
+    <div style="font-size:12px;color:var(--teal);font-weight:500">+ ${t('Add new party:')} "${qEsc}"</div>
+  </div>`;
+  list.innerHTML=html;
+  list.style.display='block';
+}
+
+function poSelectParty(partyId){
+  const p=PARTIES.find(x=>x.id===partyId);if(!p)return;
+  _poSelectedPartyId=partyId;
+  _poNewPartyName='';
+  document.getElementById('po-selected-name').textContent=p.name;
+  document.getElementById('po-selected-meta').textContent=(p.city||'')+(p.state?', '+p.state:'');
+  document.getElementById('po-selected-party').style.display='block';
+  document.getElementById('po-party-search').style.display='none';
+  document.getElementById('po-party-list').style.display='none';
+  document.getElementById('po-new-party-fields').style.display='none';
+  document.getElementById('po-order-section').style.display='block';
+  buildPhoneOrderPicker();
+}
+
+function poCreateNewFromSearch(){
+  const name=document.getElementById('po-party-search').value.trim();
+  if(!name){showToast(t('Party name is required'));return;}
+  _poSelectedPartyId=null;
+  _poNewPartyName=name;
+  document.getElementById('po-selected-name').textContent='NEW: '+name;
+  document.getElementById('po-selected-meta').textContent='(new party — fill city below)';
+  document.getElementById('po-selected-party').style.display='block';
+  document.getElementById('po-party-search').style.display='none';
+  document.getElementById('po-party-list').style.display='none';
+  document.getElementById('po-new-party-fields').style.display='block';
+  document.getElementById('po-order-section').style.display='block';
+  buildPhoneOrderPicker();
+}
+
+function poClearParty(){
+  _poSelectedPartyId=null;
+  _poNewPartyName='';
+  document.getElementById('po-selected-party').style.display='none';
+  document.getElementById('po-party-search').style.display='block';
+  document.getElementById('po-party-search').value='';
+  document.getElementById('po-party-search').focus();
+  document.getElementById('po-new-party-fields').style.display='none';
+  document.getElementById('po-order-section').style.display='none';
+}
+
+function buildPhoneOrderPicker(){
+  const wrap=document.getElementById('po-picker-wrap');
+  if(!PRODUCTS.length){wrap.innerHTML=`<div style="padding:12px;color:var(--text2);font-size:12px">${t('No products in master. Admin needs to add products first.')}</div>`;return}
+  const pls=pricelistsArr().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const cats=[...new Set(PRODUCTS.map(p=>p.category))];
+  let plSelector='';
+  if(pls.length){
+    plSelector=`<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label class="form-label" style="margin:0">${t('Pricelist:')}</label>
+      <select class="filter-select" id="po-pricelist" onchange="_poPricelistId=this.value;buildPhoneOrderPicker()">
+        <option value="">${t('Base prices')}</option>
+        ${pls.map(pl=>`<option value="${pl.id}"${_poPricelistId===pl.id?' selected':''}>${esc(pl.name)} (${fmtDate(pl.date)})</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  let html=plSelector+'<div class="order-picker"><div class="op-header"><span>Sl</span><span>Product</span><span>Price</span><span>Qty</span><span>Total</span></div>';
+  let slNo=0;
+  cats.forEach(cat=>{
+    html+=`<div class="op-cat">${esc(cat)}</div>`;
+    PRODUCTS.filter(p=>p.category===cat).forEach(p=>{
+      slNo++;
+      const price=getProductPrice(p.id,_poPricelistId);
+      const prevQty=_poPickerItems[p.id]?_poPickerItems[p.id].qty:'';
+      html+=`<div class="op-row">
+        <div style="font-size:11px;color:var(--text3);text-align:center;font-weight:500">${slNo}</div>
+        <div><div style="font-weight:500;font-size:12px">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code)} · ${esc(p.unit)}</div></div>
+        <div class="price-tag">${fmtMoney(price)}</div>
+        <input type="number" class="qty-input" id="poqty-${p.id}" min="0" step="1" placeholder="0" value="${prevQty}" oninput="updPoQty('${p.id}',this.value)">
+        <div style="font-size:11px;font-weight:500;color:var(--accent)" id="port-${p.id}">${prevQty?fmtMoney(price*prevQty):'—'}</div>
+      </div>`;
+    });
+  });
+  const grand=Object.entries(_poPickerItems).reduce((s,[pid,{qty}])=>s+getProductPrice(pid,_poPricelistId)*qty,0);
+  html+=`<div class="op-total"><span>${t('Order total')}</span><span id="po-grand">${fmtMoney(grand)}</span></div></div>`;
+  wrap.innerHTML=html;
+}
+
+function updPoQty(prodId,val){
+  const qty=parseInt(val)||0;
+  const price=getProductPrice(prodId,_poPricelistId);
+  if(qty>0)_poPickerItems[prodId]={qty};else delete _poPickerItems[prodId];
+  const rt=document.getElementById('port-'+prodId);if(rt)rt.textContent=qty>0?fmtMoney(price*qty):'—';
+  const grand=Object.entries(_poPickerItems).reduce((s,[pid,{qty}])=>s+getProductPrice(pid,_poPricelistId)*qty,0);
+  const gt=document.getElementById('po-grand');if(gt)gt.textContent=fmtMoney(grand);
+}
+
+async function submitPhoneOrder(){
+  if(!_poSelectedPartyId&&!_poNewPartyName){showToast(t('Please select or create a party'));return}
+  if(!Object.keys(_poPickerItems).length){showToast(t('Add at least one product'));return}
+
+  setSyncStatus('wait','Saving...');
+  try{
+    let partyId=_poSelectedPartyId;
+    // Create new party if needed
+    if(!partyId){
+      const city=document.getElementById('po-new-city').value.trim();
+      if(!city){showToast(t('City is required'));setSyncStatus('ok','Live');return}
+      const phone=document.getElementById('po-new-phone').value.trim();
+      partyId=uid();
+      const partyData={id:partyId,name:_poNewPartyName,city,state:'',contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:today(),grade:'',source:'app',approved:false};
+      await SET(REF('parties/'+partyId),partyData);
+    } else {
+      await UPDATE(REF('parties/'+partyId),{lastOrder:today()});
+    }
+
+    const visitId=uid();
+    const visitData={
+      id:visitId,
+      spId:currentSP.id,
+      partyId,
+      plannedTime:nowTime(),
+      date:today(),
+      status:'order',
+      checkIn:nowTime(),
+      checkOut:nowTime(),
+      feedback:document.getElementById('po-notes').value.trim(),
+      nextVisit:'',
+      orderItems:Object.entries(_poPickerItems).map(([prodId,{qty}])=>({prodId,qty})),
+      payment:null,
+      pricelistId:_poPricelistId||'',
+      gps:null,
+      type:'phone_order'
+    };
+    await SET(REF('visits/'+visitId),visitData);
+
+    setSyncStatus('ok','Live');
+    closeModal('phone-order-modal');
+    showToast(t('Phone order recorded'));
+  }catch(e){
+    setSyncStatus('err','Error');
+    showToast(t('Failed:')+' '+e.message);
+  }
+}
+
 /* ── NEW PARTY VISIT (SP creates party + checks in immediately) ── */
 function openNewPartyVisitModal(){
   document.getElementById('npv-name').value='';
@@ -1580,14 +1821,12 @@ async function submitNewPartyVisit(){
   if(!name){showToast(t('Party name is required'));return}
   if(!city){showToast(t('City is required'));return}
 
-  // Check duplicate
   const dup=PARTIES.find(p=>p.name.toLowerCase()===name.toLowerCase()&&(p.city||'').toLowerCase()===city.toLowerCase());
   if(dup){showToast('Party "'+name+'" in '+city+' already exists');return}
 
   setSyncStatus('wait','Creating party...');
   showToast('Getting your location...');
 
-  // Get GPS
   let gpsData={lat:null,lng:null,accuracy:null,x:15+Math.random()*70,y:15+Math.random()*70};
   try{
     const pos=await new Promise((resolve,reject)=>{
@@ -1602,12 +1841,10 @@ async function submitNewPartyVisit(){
   }
 
   try{
-    // 1. Create the party
     const partyId=uid();
     const partyData={id:partyId,name,city,state:npvState,contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:'',grade:'',source:'app',approved:false};
     await SET(REF('parties/'+partyId),partyData);
 
-    // 2. Create the visit and auto-check-in
     const visitId=uid();
     const visitData={id:visitId,spId:currentSP.id,partyId,plannedTime:nowTime(),date:today(),status:'active',checkIn:nowTime(),checkOut:null,feedback:'',nextVisit:'',orderItems:[],payment:null,gps:gpsData};
     await SET(REF('visits/'+visitId),visitData);
@@ -1626,7 +1863,6 @@ async function submitNewPartyVisit(){
    ADMIN — DASHBOARD
    ════════════════════════════════════════════════════════════ */
 function renderDashboard(){
-  // Preserve filter selections before DOM rebuild
   const prevState=document.getElementById('df-state')?.value||'all';
   const prevSP=document.getElementById('df-sp')?.value||'all';
   const prevStatus=document.getElementById('df-status')?.value||'all';
@@ -1638,17 +1874,19 @@ function renderDashboard(){
   const va=visitsArr();
   let todayV=va.filter(v=>v.date>=prevFrom&&v.date<=prevTo);
 
-  // Apply filters
   if(prevState!=='all') todayV=todayV.filter(v=>{const p=PARTIES.find(p=>p.id===v.partyId);return p&&p.state===prevState;});
   if(prevSP!=='all') todayV=todayV.filter(v=>v.spId===prevSP);
   if(prevStatus!=='all'){
-    if(prevStatus==='feedback') todayV=todayV.filter(v=>v.status==='noorder'||v.status==='order');
+    if(prevStatus==='phone_order') todayV=todayV.filter(v=>v.type==='phone_order');
+    else if(prevStatus==='feedback') todayV=todayV.filter(v=>v.status==='noorder'||v.status==='order');
     else todayV=todayV.filter(v=>v.status===prevStatus);
   }
 
   const todayOrd=todayV.filter(v=>v.status==='order');
   const todayOrdVal=todayOrd.reduce((s,v)=>s+orderValue(v),0);
   const todayPay=todayV.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
+  const phoneOrders=todayV.filter(v=>v.type==='phone_order');
+  const phoneOrdVal=phoneOrders.reduce((s,v)=>s+orderValue(v),0);
 
   const mc=(num,lbl,sub,color='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${color}">${num}</div><div class="metric-lbl">${lbl}</div><div class="metric-sub">${sub}</div></div>`;
 
@@ -1658,15 +1896,16 @@ function renderDashboard(){
     const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
     const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',state:'—'};
     const ov=orderValue(v);
-    return`<tr>
+    const isPhone=v.type==='phone_order';
+    return`<tr${isPhone?' style="background:var(--purple-light)"':''}>
       <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
       <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
-      <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(party.name)}</td>
+      <td style="font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(party.name)}${isPhone?' <span class="badge badge-phone" style="font-size:9px;padding:1px 5px">📞</span>':''}</td>
       <td><span class="badge badge-state" style="font-size:10px">${esc(party.state)}</span></td>
-      <td class="time-mono">${fmtTime(v.plannedTime)}</td>
+      <td class="time-mono">${isPhone?'—':fmtTime(v.plannedTime)}</td>
       <td class="time-mono">${v.checkIn?fmtTime(v.checkIn):'—'}</td>
       <td class="time-mono">${v.checkOut?fmtTime(v.checkOut):'—'}</td>
-      <td>${dur(v.checkIn,v.checkOut)?`<span class="dur-badge">${dur(v.checkIn,v.checkOut)}</span>`:'—'}</td>
+      <td>${isPhone?'<span class="badge badge-phone" style="font-size:10px">Phone</span>':(dur(v.checkIn,v.checkOut)?`<span class="dur-badge">${dur(v.checkIn,v.checkOut)}</span>`:'—')}</td>
       <td>${bh(v.status)}</td>
       <td class="price-tag">${ov>0?fmtMoney(ov):'—'}</td>
       <td>${v.payment?`<span style="font-size:11px;color:var(--teal);font-weight:500">${esc(v.payment.mode)}<br>${fmtMoney(v.payment.amount)}</span>`:'—'}</td>
@@ -1674,7 +1913,6 @@ function renderDashboard(){
     </tr>`;
   }).join('');
 
-  // SP summary
   const spRows=SALESPERSONS.map(sp=>{
     const myV=todayV.filter(v=>v.spId===sp.id);
     const tot=myV.length,done=myV.filter(v=>['order','noorder'].includes(v.status)).length,ord=myV.filter(v=>v.status==='order').length;
@@ -1686,7 +1924,6 @@ function renderDashboard(){
     </div>`;
   }).join('');
 
-  // Feedback
   const fbItems=va.filter(v=>v.feedback&&v.feedback.trim()).slice(-6).reverse().map(v=>{
     const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
     const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
@@ -1696,8 +1933,6 @@ function renderDashboard(){
       ${v.nextVisit?`<div style="font-size:11px;color:var(--accent);margin-top:4px;font-weight:500">Next: ${fmtDate(v.nextVisit)}</div>`:''}
     </div>`;
   }).join('');
-
-  // Map will be initialized after DOM render
 
   const pendingNewParties=PARTIES.filter(p=>p.source==='app'&&!p.approved);
   const pendingBanner=pendingNewParties.length?`<div style="background:var(--amber-light);border:1px solid #F0C68A;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1716,13 +1951,13 @@ function renderDashboard(){
         <button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('df-from').value=today();document.getElementById('df-to').value=today();renderDashboard()">Today</button>
         <select class="filter-select" id="df-state" onchange="renderDashboard()"><option value="all">All states</option>${[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort().map(s=>`<option>${esc(s)}</option>`).join('')}</select>
         <select class="filter-select" id="df-sp" onchange="renderDashboard()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
-        <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option></select>
+        <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option><option value="phone_order">📞 Phone Orders only</option></select>
       </div>
     </div>
     <div class="metrics-row">
-      ${mc(todayV.length,isRange?'Total visits':'Visits today',prevSP!=='all'?(SALESPERSONS.find(s=>s.id===prevSP)||{name:'SP'}).name:'All salespersons')}
-      ${mc(todayV.filter(v=>['order','noorder'].includes(v.status)).length,'Completed',todayOrd.length+' with orders')}
-      ${mc(fmtMoney(todayOrdVal),isRange?'Order value':'Order value today',todayOrd.length+' orders','var(--accent)')}
+      ${mc(todayV.filter(v=>v.type!=='phone_order').length,isRange?'Field visits':'Field visits today',prevSP!=='all'?(SALESPERSONS.find(s=>s.id===prevSP)||{name:'SP'}).name:'All salespersons')}
+      ${mc(phoneOrders.length,'📞 Phone Orders',fmtMoney(phoneOrdVal)+' value','var(--purple)')}
+      ${mc(fmtMoney(todayOrdVal),isRange?'Order value':'Order value today',todayOrd.length+' orders (incl. phone)','var(--accent)')}
       ${mc(fmtMoney(todayPay),isRange?'Collected':'Collected today',todayV.filter(v=>v.payment).length+' payments','var(--teal)')}
     </div>
     <div class="admin-grid">
@@ -1746,19 +1981,17 @@ function renderDashboard(){
     </div>
   </div>`);
 
-  // Restore filter selections after DOM rebuild
   const dfFrom=document.getElementById('df-from');if(dfFrom)dfFrom.value=prevFrom;
   const dfTo=document.getElementById('df-to');if(dfTo)dfTo.value=prevTo;
   const dfState=document.getElementById('df-state');if(dfState)dfState.value=prevState;
   const dfSP=document.getElementById('df-sp');if(dfSP)dfSP.value=prevSP;
   const dfStatus=document.getElementById('df-status');if(dfStatus)dfStatus.value=prevStatus;
 
-  // Initialize Leaflet GPS map
   setTimeout(()=>{
     const mapEl=document.getElementById('gps-map');
     if(!mapEl)return;
     const colorMap={order:'#1A5C3A',active:'#378ADD',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990'};
-    const gpsVisits=todayV.filter(v=>v.gps&&v.gps.lat&&v.gps.lng);
+    const gpsVisits=todayV.filter(v=>v.gps&&v.gps.lat&&v.gps.lng&&v.type!=='phone_order');
     if(!gpsVisits.length){
       mapEl.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:13px">No GPS data for today\'s visits</div>';
       return;
@@ -1787,13 +2020,11 @@ function renderDashboard(){
    ADMIN — TOURS
    ════════════════════════════════════════════════════════════ */
 function renderTours(){
-  // Preserve filter selections before DOM rebuild
   const prevSP=document.getElementById('tour-sp-f')?.value||'all';
   const prevSt=document.getElementById('tour-st-f')?.value||'all';
 
   let ta=toursArr().sort((a,b)=>b.fromDate.localeCompare(a.fromDate));
 
-  // Apply filters
   if(prevSP!=='all') ta=ta.filter(t=>t.spId===prevSP);
   if(prevSt!=='all') ta=ta.filter(t=>t.status===prevSt);
 
@@ -1826,7 +2057,6 @@ function renderTours(){
     </tr>`;
   }).join('');
 
-  // Monthly targets bar
   const mk=currentMonthKey();const monthTargets=TARGETS[mk]||{};
   const d=new Date();
   const mFrom=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
@@ -1867,7 +2097,6 @@ function renderTours(){
     </div>
     ${ta.map(t=>buildTourCardHTML(t)).join('')}
   </div>`);
-  // Restore tour filter selections
   const tSpF=document.getElementById('tour-sp-f');if(tSpF)tSpF.value=prevSP;
   const tStF=document.getElementById('tour-st-f');if(tStF)tStF.value=prevSt;
 }
@@ -2014,43 +2243,24 @@ async function submitTargets(){
 /* ════════════════════════════════════════════════════════════
    ADMIN — MeCA
    ════════════════════════════════════════════════════════════ */
-/* ═══════════════════════════════════════════════════════════
-   MeCA — CORRECT DEFINITION (confirmed with user)
-   ─────────────────────────────────────────────────────────
-   Me = unique parties visited (at least 1 completed check-in+out)
-        Same party visited 10 times = still 1 Me
-   C  = unique parties who placed any order (ever, no time limit)
-        ÷ total unique parties visited (Me)
-   A  = total order value from converted parties
-        ÷ number of converted parties
-        (all their orders in the date range, not just first)
-   Revenue = Me × C × A
-   ─────────────────────────────────────────────────────────
-   New    = party has NO order anywhere in history before date range
-   Existing = party has at least one order before the date range
-   ═══════════════════════════════════════════════════════════ */
 function calcMeCA(visitsArray){
-  // Step 1: unique parties that had at least one completed visit
+  // Phone orders are excluded from MeCA — they go in a separate bucket
   const completedVisits=visitsArray.filter(v=>
-    ['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut
+    ['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order'
   );
   const uniquePartyIds=[...new Set(completedVisits.map(v=>v.partyId))];
   const Me=uniquePartyIds.length;
   if(Me===0) return{Me:0,C:0,A:0,clients:0,revenue:0,converted:0};
 
-  // Step 2: which of those unique parties have EVER placed an order
-  // (anywhere in full visit history, no time limit)
   const convertedPartyIds=uniquePartyIds.filter(partyId=>
-    visitsArr().some(v=>v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut)
+    visitsArr().some(v=>v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut&&v.type!=='phone_order')
   );
   const converted=convertedPartyIds.length;
   const C=Math.round(converted/Me*100);
 
-  // Step 3: A = total order value from converted parties (orders in full history)
-  // ÷ number of converted parties
   const totalOrderVal=convertedPartyIds.reduce((sum,partyId)=>{
     const partyOrders=visitsArr().filter(v=>
-      v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut
+      v.partyId===partyId&&v.status==='order'&&v.checkIn&&v.checkOut&&v.type!=='phone_order'
     );
     return sum+partyOrders.reduce((s,v)=>s+orderValue(v),0);
   },0);
@@ -2060,9 +2270,6 @@ function calcMeCA(visitsArray){
   return{Me,C,A,clients:converted,revenue,converted};
 }
 
-/* Helper: is this party a "new" client at the time of the date range?
-   CSV-uploaded = always existing. App-added = new.
-   Fallback: no completed order visit BEFORE the range start date */
 function isNewClientForRange(partyId, rangeFrom){
   const party=PARTIES.find(p=>p.id===partyId);
   if(party&&party.source==='csv') return false;
@@ -2081,7 +2288,7 @@ function renderMeCA(){
   const toDefault=today();
 
   setViewHTML(`<div class="section-shell">
-    <div class="admin-topbar"><div><div class="admin-title">MeCA Analysis</div><div class="admin-sub">Me × C = Clients · Clients × A = Revenue</div></div></div>
+    <div class="admin-topbar"><div><div class="admin-title">MeCA Analysis</div><div class="admin-sub">Me × C = Clients · Clients × A = Revenue · Phone orders excluded</div></div></div>
     <div class="meca-formula-bar">
       <div style="font-size:12px;font-weight:600;color:var(--text2)">The MeCA Formula — S.I.N.G. (Sales Is a Number Game)</div>
       <div class="meca-eq">
@@ -2094,8 +2301,8 @@ function renderMeCA(){
         <span class="meca-var rev">REVENUE</span>
       </div>
       <div style="margin-top:8px;font-size:11px;color:var(--text3);line-height:1.7">
-        <strong style="color:var(--text2)">Me</strong> = unique parties with at least 1 completed visit &nbsp;·&nbsp;
-        <strong style="color:var(--text2)">C</strong> = parties who ever placed an order ÷ Me &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">Me</strong> = unique parties with at least 1 completed field visit &nbsp;·&nbsp;
+        <strong style="color:var(--text2)">C</strong> = parties who ever placed a field order ÷ Me &nbsp;·&nbsp;
         <strong style="color:var(--text2)">A</strong> = total orders value ÷ converted parties &nbsp;·&nbsp;
         <strong style="color:var(--text2)">New</strong> = no order history before range &nbsp;·&nbsp;
         <strong style="color:var(--text2)">Existing</strong> = ordered before range
@@ -2127,8 +2334,6 @@ function refreshMeCAContent(){
   const spF=document.getElementById('meca-sp-f')?.value||'all';if(!from||!to)return;
   let fv=visitsArr().filter(v=>v.date>=from&&v.date<=to);
   if(spF!=='all')fv=fv.filter(v=>v.spId===spF);
-  // New = party has no order history before range start
-  // Existing = party has at least one order before range start
   const newPartyIds=new Set(
     [...new Set(fv.map(v=>v.partyId))].filter(pid=>isNewClientForRange(pid,from))
   );
@@ -2149,7 +2354,7 @@ function refreshMeCAContent(){
 
   const spRows=SALESPERSONS.map((sp,idx)=>{
     const sv=fv.filter(v=>v.spId===sp.id);const m=calcMeCA(sv);
-    const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut).length;
+    const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order').length;
     return`<div class="sp-meca-row">
       <div class="sp-meca-cell" style="text-align:center;font-weight:500;color:var(--text3)">${idx+1}</div>
       <div class="sp-meca-cell"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></div>
@@ -2161,7 +2366,6 @@ function refreshMeCAContent(){
     </div>`;
   }).join('');
 
-  // Monthly trend
   const months=[];for(let i=3;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push({year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})});}
   let totMe=0,totC=0,totA=0,totRev=0,cnt=0;
   const mRows=months.map(({year,month,label},idx)=>{
@@ -2350,7 +2554,6 @@ function refreshPayments(){
    ════════════════════════════════════════════════════════════ */
 function renderParties(){
   const states=[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort();
-  const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
   const pendingCount=PARTIES.filter(p=>p.source==='app'&&!p.approved).length;
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
@@ -2372,7 +2575,7 @@ function refreshParties(){
   const stF=document.getElementById('pt-state')?.value||'all';const spF=document.getElementById('pt-sp')?.value||'all';
   const grF=document.getElementById('pt-grade')?.value;const typeF=document.getElementById('pt-type')?.value||'all';
   const q=(document.getElementById('pt-search')?.value||'').toLowerCase();
-  const lvMap=buildLastVisitMap();const roIds=new Set(getReorderParties().map(p=>p.id));
+  const roIds=new Set(getReorderParties().map(p=>p.id));
   let f=PARTIES.filter(p=>{
     if(stF!=='all'&&p.state!==stF)return false;if(spF!=='all'&&p.spId!==spF)return false;
     if(grF!==undefined&&grF!=='all'){if(grF===''&&(p.grade||''))return false;if(grF!==''&&p.grade!==grF)return false;}
@@ -2453,12 +2656,13 @@ function openPartyDrawer(partyId){
   const dotC={order:'#1A5C3A',noorder:'#C0392B',rescheduled:'#B87333',planned:'#9C9990',active:'#378ADD'};
   document.getElementById('drawer-history').innerHTML=!sorted.length?'<div style="padding:8px 0;font-size:12px;color:var(--text2)">No visits recorded yet.</div>':sorted.map((v,idx)=>{
     const ov=orderValue(v);
+    const isPhone=v.type==='phone_order';
     return`<div class="history-row">
       <div style="font-size:11px;font-weight:500;color:var(--text3);min-width:20px;text-align:center">${idx+1}</div>
-      <div class="history-dot" style="background:${dotC[v.status]||'#999'}"></div>
+      <div class="history-dot" style="background:${isPhone?'#4A3580':dotC[v.status]||'#999'}"></div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:500">${fmtDate(v.date)} <span class="badge badge-${v.status==='order'?'order':v.status==='noorder'?'noorder':'planned'}" style="font-size:10px;padding:2px 6px">${v.status}</span></div>
-        ${v.checkIn&&v.checkOut?`<div style="font-size:11px;color:var(--text2)">${fmtTime(v.checkIn)} – ${fmtTime(v.checkOut)}${dur(v.checkIn,v.checkOut)?' · '+dur(v.checkIn,v.checkOut):''}</div>`:''}
+        <div style="font-size:13px;font-weight:500">${fmtDate(v.date)} <span class="badge badge-${v.status==='order'?'order':v.status==='noorder'?'noorder':'planned'}" style="font-size:10px;padding:2px 6px">${v.status}</span>${isPhone?' <span class="badge badge-phone" style="font-size:10px;padding:2px 6px">📞 Phone</span>':''}</div>
+        ${v.checkIn&&v.checkOut&&!isPhone?`<div style="font-size:11px;color:var(--text2)">${fmtTime(v.checkIn)} – ${fmtTime(v.checkOut)}${dur(v.checkIn,v.checkOut)?' · '+dur(v.checkIn,v.checkOut):''}</div>`:''}
         ${ov>0?`<div style="font-size:12px;font-weight:500;color:var(--accent)">${fmtMoney(ov)}</div>`:''}
         ${v.feedback?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${esc(v.feedback)}</div>`:''}
         ${v.payment?`<div style="font-size:11px;color:var(--teal);margin-top:2px">Paid ${fmtMoney(v.payment.amount)} via ${esc(v.payment.mode)}</div>`:''}
@@ -2470,7 +2674,7 @@ function openPartyDrawer(partyId){
 function closeDrawer(){document.getElementById('party-drawer').classList.remove('open');}
 
 /* ════════════════════════════════════════════════════════════
-   ADMIN — PRICELIST (Multiple pricelists with name + date)
+   ADMIN — PRICELIST
    ════════════════════════════════════════════════════════════ */
 function pricelistsArr(){return Object.values(PRICELISTS);}
 
@@ -2488,7 +2692,6 @@ function renderPricelist(){
     </div>
     <input class="search-bar" id="pl-search" placeholder="Search product name or code..." oninput="refreshPricelist()">
 
-    <!-- Pricelists management -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">Pricelists <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="openPricelistModal()">+ New pricelist</button></div>
       <div id="pl-list-wrap">${pls.length?pls.map((pl,idx)=>{
@@ -2506,7 +2709,6 @@ function renderPricelist(){
       }).join(''):'<div style="padding:16px;font-size:13px;color:var(--text2)">No pricelists created. Products use base prices by default.</div>'}</div>
     </div>
 
-    <!-- Product master table -->
     <div class="card"><div class="card-header">Product master (base prices)</div><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>Code</th><th>Product name</th><th>Category</th><th>Unit</th><th>Sizes</th><th>Base price</th><th>Actions</th></tr></thead><tbody id="pl-rows"></tbody></table></div></div>
   </div>`);
   refreshPricelist();
@@ -2545,7 +2747,6 @@ async function submitProduct(){
 }
 async function deleteProduct(id){if(!confirm('Delete this product?'))return;await REMOVE(REF('products/'+id));showToast('Deleted');}
 
-/* ── PRICELIST CRUD ── */
 function openPricelistModal(editId){
   const title=editId?'Edit pricelist':'New pricelist';
   const pl=editId?PRICELISTS[editId]:null;
@@ -2630,29 +2831,21 @@ function getProductPrice(prodId,pricelistId){
 }
 
 /* ════════════════════════════════════════════════════════════
-   ADMIN — SP SUMMARY (Auto-tours + Visit stats + Payments)
+   ADMIN — SP SUMMARY
    ════════════════════════════════════════════════════════════ */
-
-/* Home city — visits to parties outside this city trigger auto-tours */
 const HOME_CITY='Kolkata';
 
-/* Compute auto-tours from visit data for a given SP in a date range.
-   Logic: Group visits where party.city ≠ HOME_CITY by STATE.
-   Within each state, chain visits with ≤24hr gap between consecutive check-ins.
-   Each chain = one auto-tour. */
 function computeAutoTours(spId,from,to){
   const spVisits=visitsArr().filter(v=>
     v.spId===spId&&v.date>=from&&v.date<=to&&v.checkIn&&
-    ['order','noorder','active'].includes(v.status)
+    ['order','noorder','active'].includes(v.status)&&v.type!=='phone_order'
   ).sort((a,b)=>(a.date+' '+a.checkIn).localeCompare(b.date+' '+b.checkIn));
 
-  // Group by party state, excluding home city
   const outstation=spVisits.filter(v=>{
     const p=PARTIES.find(x=>x.id===v.partyId);
     return p&&(p.city||'').toLowerCase()!==HOME_CITY.toLowerCase();
   });
 
-  // Group by state
   const byState={};
   outstation.forEach(v=>{
     const p=PARTIES.find(x=>x.id===v.partyId);
@@ -2663,9 +2856,7 @@ function computeAutoTours(spId,from,to){
 
   const tours=[];
   Object.entries(byState).forEach(([state,visits])=>{
-    // Sort by date+time
     visits.sort((a,b)=>(a.date+' '+(a.checkIn||'')).localeCompare(b.date+' '+(b.checkIn||'')));
-    // Chain: split into tours where gap > 24hrs
     let chain=[visits[0]];
     for(let i=1;i<visits.length;i++){
       const prev=chain[chain.length-1];
@@ -2673,7 +2864,6 @@ function computeAutoTours(spId,from,to){
       const currStart=new Date(visits[i].date+'T'+(visits[i].checkIn||'00:00'));
       const gapHrs=(currStart-prevEnd)/(1000*60*60);
       if(gapHrs>24){
-        // close current chain, start new
         tours.push({state,visits:chain});
         chain=[visits[i]];
       } else {
@@ -2683,7 +2873,6 @@ function computeAutoTours(spId,from,to){
     if(chain.length)tours.push({state,visits:chain});
   });
 
-  // Enrich each tour
   return tours.map(t=>{
     const dates=t.visits.map(v=>v.date).sort();
     const cities=[...new Set(t.visits.map(v=>{const p=PARTIES.find(x=>x.id===v.partyId);return p?.city||'?';}))];
@@ -2728,7 +2917,6 @@ function renderSPSummary(){
     <div id="sps-content"></div>
   </div>`);
 
-  // Restore filters
   const spsSpEl=document.getElementById('sps-sp');if(spsSpEl)spsSpEl.value=prevSP;
   const spsFromEl=document.getElementById('sps-from');if(spsFromEl)spsFromEl.value=prevFrom;
   const spsToEl=document.getElementById('sps-to');if(spsToEl)spsToEl.value=prevTo;
@@ -2747,7 +2935,9 @@ function refreshSPSummary(){
 
   document.getElementById('sps-content').innerHTML=sps.map(sp=>{
     const allSpVisits=visitsArr().filter(v=>v.spId===sp.id&&v.date>=from&&v.date<=to);
-    const spVisits=allSpVisits.filter(v=>v.checkIn); // only visits where SP actually checked in
+    const spVisits=allSpVisits.filter(v=>v.checkIn&&v.type!=='phone_order');
+    const phoneOrders=allSpVisits.filter(v=>v.type==='phone_order');
+    const phoneOrdVal=phoneOrders.reduce((s,v)=>s+orderValue(v),0);
     const completed=spVisits.filter(v=>['order','noorder'].includes(v.status)&&v.checkOut);
     const orders=spVisits.filter(v=>v.status==='order');
     const totOV=orders.reduce((s,v)=>s+orderValue(v),0);
@@ -2756,10 +2946,8 @@ function refreshSPSummary(){
     const totPay=pays.reduce((s,v)=>s+v.payment.amount,0);
     const autoTours=computeAutoTours(sp.id,from,to);
 
-    // Metrics row
     const mc=(n,l,c='var(--text)')=>`<div class="metric-card"><div class="metric-num" style="color:${c}">${n}</div><div class="metric-lbl">${l}</div></div>`;
 
-    // Auto-tour rows
     const tourRows=autoTours.map((t,idx)=>{
       const statusBadge=t.isActive?'<span class="tour-badge tour-active">Active</span>':'<span class="tour-badge tour-approved">Completed</span>';
       return`<tr class="sps-tour-row" onclick="toggleTourDetail('sps-td-${sp.id}-${idx}',this)" style="cursor:pointer">
@@ -2795,7 +2983,6 @@ function refreshSPSummary(){
       </td></tr>`;
     }).join('');
 
-    // Payment rows
     const payRows=pays.sort((a,b)=>b.date.localeCompare(a.date)).map((v,idx)=>{
       const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?'};
       return`<tr>
@@ -2812,6 +2999,21 @@ function refreshSPSummary(){
     const payByMode={};pays.forEach(v=>{const m=v.payment.mode;payByMode[m]=(payByMode[m]||0)+v.payment.amount;});
     const payModeSummary=Object.entries(payByMode).map(([m,a])=>`${m}: ${fmtMoney(a)}`).join(' · ');
 
+    // Phone order rows
+    const phoneRows=phoneOrders.sort((a,b)=>b.date.localeCompare(a.date)).map((v,idx)=>{
+      const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',city:''};
+      const ov=orderValue(v);
+      return`<tr>
+        <td style="text-align:center;color:var(--text3)">${idx+1}</td>
+        <td class="time-mono">${fmtDate(v.date)}</td>
+        <td style="font-weight:500">${esc(party.name)}</td>
+        <td>${esc(party.city||'—')}</td>
+        <td class="time-mono">${v.checkIn?fmtTime(v.checkIn):'—'}</td>
+        <td class="price-tag">${fmtMoney(ov)}</td>
+        <td style="font-size:11px;color:var(--text2)">${esc(v.feedback||'—')}</td>
+      </tr>`;
+    }).join('');
+
     return`<div class="card" style="margin-bottom:20px">
       <div class="card-header" style="padding:14px 18px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -2821,17 +3023,16 @@ function refreshSPSummary(){
         </div>
       </div>
 
-      <!-- Metrics -->
-      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:14px 18px;border-bottom:1px solid var(--border)">
-        ${mc(spVisits.length,'Visits done')}
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:14px 18px;border-bottom:1px solid var(--border)">
+        ${mc(spVisits.length,'Field visits')}
         ${mc(completed.length,'Completed')}
-        ${mc(orders.length,'Orders')}
+        ${mc(orders.length,'Field orders')}
+        ${mc(phoneOrders.length,'📞 Phone orders','var(--purple)')}
         ${mc(convPct+'%','Conversion',convPct>=50?'var(--accent)':'var(--red)')}
-        ${mc(fmtMoney(totOV),'Order value','var(--accent)')}
+        ${mc(fmtMoney(totOV+phoneOrdVal),'Total order value','var(--accent)')}
         ${mc(fmtMoney(totPay),'Collected','var(--teal)')}
       </div>
 
-      <!-- Auto-Tours -->
       <div style="border-bottom:1px solid var(--border)">
         <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-tours-${sp.id}',this)">
           <span style="font-size:13px;font-weight:600">🗺 Tour History <span style="font-weight:400;color:var(--text2)">(${autoTours.length} tours detected)</span></span>
@@ -2846,7 +3047,20 @@ function refreshSPSummary(){
         </div>
       </div>
 
-      <!-- Payments -->
+      <div style="border-bottom:1px solid var(--border)">
+        <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-phone-${sp.id}',this)">
+          <span style="font-size:13px;font-weight:600">📞 Phone Orders <span style="font-weight:400;color:var(--text2)">(${phoneOrders.length} orders · ${fmtMoney(phoneOrdVal)})</span></span>
+          <span style="font-size:11px;color:var(--text3)">▼ Click to expand</span>
+        </div>
+        <div id="sps-phone-${sp.id}" style="display:none">
+          ${phoneOrders.length?`<div class="tbl-scroll"><table class="tbl">
+            <thead><tr><th>Sl</th><th>Date</th><th>Party</th><th>City</th><th>Time</th><th>Value</th><th>Notes</th></tr></thead>
+            <tbody>${phoneRows}</tbody>
+            <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="5" style="text-align:right">Total</td><td class="price-tag">${fmtMoney(phoneOrdVal)}</td><td></td></tr></tfoot>
+          </table></div>`:'<div style="padding:16px;font-size:12px;color:var(--text2);text-align:center">No phone orders in this period</div>'}
+        </div>
+      </div>
+
       <div>
         <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-pays-${sp.id}',this)">
           <span style="font-size:13px;font-weight:600">💰 Payment Collections <span style="font-weight:400;color:var(--text2)">(${pays.length} payments · ${fmtMoney(totPay)})</span></span>
@@ -2912,7 +3126,6 @@ function renderSettingsView(){
   setViewHTML(`<div class="section-shell" style="max-width:660px">
     <div class="admin-topbar" style="margin-bottom:16px"><div><div class="admin-title">Settings</div></div></div>
 
-    <!-- Salespersons -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">Salespersons</div>
       <div id="sp-list-wrap">${buildSPListHTML()}</div>
@@ -2922,14 +3135,12 @@ function renderSettingsView(){
       </div>
     </div>
 
-    <!-- Admin password -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-header">Admin password</div>
       <div style="padding:14px 16px;font-size:13px;color:var(--text2)">Change the admin login password. Note: permanently updating requires editing ADMIN_PASSWORD in the HTML file.</div>
       <div style="padding:0 16px 14px"><button class="btn btn-outline" onclick="openModal('pwd-modal')">Change password</button></div>
     </div>
 
-    <!-- FY Rollover -->
     <div class="fy-card">
       <div class="card-header" style="background:var(--teal-light)">
         <span style="color:var(--teal);font-weight:600">Financial Year Rollover</span>
@@ -2947,7 +3158,6 @@ function renderSettingsView(){
       </div>
     </div>
 
-    <!-- Data -->
     <div class="card" style="margin-top:16px">
       <div class="card-header">Data & backup</div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
@@ -2958,7 +3168,6 @@ function renderSettingsView(){
       </div>
     </div>
 
-    <!-- Selective Delete -->
     <div class="card" style="margin-top:16px;border:1.5px solid var(--amber)">
       <div class="card-header" style="background:var(--amber-light);color:var(--amber)">🗑 Delete selected data</div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
@@ -2990,7 +3199,6 @@ function renderSettingsView(){
       </div>
     </div>
 
-    <!-- Reset Data -->
     <div class="card" style="margin-top:16px;border:1.5px solid var(--red)">
       <div class="card-header" style="background:var(--red-light);color:var(--red)">⚠ Reset data</div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
@@ -3026,7 +3234,7 @@ function buildSPListHTML(){
 
 function buildFYSummaryHTML(){
   const fy=getCurrentFY();const va=visitsArr().filter(v=>v.date>=fy.from&&v.date<=fy.to);
-  const ords=va.filter(v=>v.status==='order');const totOV=ords.reduce((s,v)=>s+orderValue(v),0);const pays=va.filter(v=>v.payment).reduce((s,v)=>s+v.payment.amount,0);
+  const ords=va.filter(v=>v.status==='order');const totOV=ords.reduce((s,v)=>s+orderValue(v),0);
   const mc=(n,l)=>`<div style="text-align:center"><div style="font-size:18px;font-weight:600">${n}</div><div style="font-size:10px;color:var(--text2);margin-top:2px">${l}</div></div>`;
   return`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${mc(va.length,'Visits')}${mc(ords.length,'Orders')}${mc(fmtMoney(totOV),'Order value')}</div>`;
 }
@@ -3083,9 +3291,7 @@ async function resetAllData(){
   }catch(e){setSyncStatus('err','Error');showToast('Delete failed: '+e.message);}
 }
 
-/* ── SELECTIVE DELETE ── */
 function toggleSdelDates(){
-  // dates only relevant for visits
   const type=document.getElementById('sdel-type')?.value;
   document.getElementById('sdel-dates-row').style.display=(type==='tours')?'none':'grid';
 }
@@ -3200,14 +3406,17 @@ function changePassword(){
 function openWASummary(){
   if(!currentSP)return;
   const myV=visitsArr().filter(v=>v.spId===currentSP.id&&v.date===today());
+  const fieldVisits=myV.filter(v=>v.type!=='phone_order');
+  const phoneOrders=myV.filter(v=>v.type==='phone_order');
   const ords=myV.filter(v=>v.status==='order');const pays=myV.filter(v=>v.payment);
   const totOV=ords.reduce((s,v)=>s+orderValue(v),0);const totPay=pays.reduce((s,v)=>s+v.payment.amount,0);
   const d=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const lines=[`*Craze Hosiery Pvt. Ltd.*`,`*Daily Report — ${currentSP.name.split(' ')[0]}*`,`📅 ${d}`,``,`*Visits Summary*`,`Planned: ${myV.length}`,`Completed: ${myV.filter(v=>['order','noorder'].includes(v.status)).length}`];
+  const lines=[`*Craze Hosiery Pvt. Ltd.*`,`*Daily Report — ${currentSP.name.split(' ')[0]}*`,`📅 ${d}`,``,`*Visits Summary*`,`Planned: ${fieldVisits.length}`,`Completed: ${fieldVisits.filter(v=>['order','noorder'].includes(v.status)).length}`];
   if(ords.length)lines.push(`✅ Orders: ${ords.length}`);
-  if(myV.filter(v=>v.status==='noorder').length)lines.push(`❌ No order: ${myV.filter(v=>v.status==='noorder').length}`);
-  if(myV.filter(v=>v.status==='rescheduled').length)lines.push(`🔄 Rescheduled: ${myV.filter(v=>v.status==='rescheduled').length}`);
-  if(ords.length){lines.push('',`*Orders Received*`);ords.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${fmtMoney(orderValue(v))}`);});lines.push(`*Total: ${fmtMoney(totOV)}*`);}
+  if(fieldVisits.filter(v=>v.status==='noorder').length)lines.push(`❌ No order: ${fieldVisits.filter(v=>v.status==='noorder').length}`);
+  if(fieldVisits.filter(v=>v.status==='rescheduled').length)lines.push(`🔄 Rescheduled: ${fieldVisits.filter(v=>v.status==='rescheduled').length}`);
+  if(phoneOrders.length)lines.push(`📞 Phone Orders: ${phoneOrders.length}`);
+  if(ords.length){lines.push('',`*Orders Received*`);ords.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};const tag=v.type==='phone_order'?' 📞':'';lines.push(`• ${p.name}${tag}: ${fmtMoney(orderValue(v))}`);});lines.push(`*Total: ${fmtMoney(totOV)}*`);}
   if(pays.length){lines.push('',`*Payments Collected*`);pays.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${fmtMoney(v.payment.amount)} (${v.payment.mode})`);});lines.push(`*Total: ${fmtMoney(totPay)}*`);}
   const fb=myV.filter(v=>v.feedback&&v.feedback.trim()&&['order','noorder'].includes(v.status));
   if(fb.length){lines.push('',`*Feedback*`);fb.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${v.feedback}${v.nextVisit?' (Next: '+fmtDate(v.nextVisit)+')':''}`);});}
@@ -3223,7 +3432,6 @@ function copyWA(){
 }
 function fbCopy(text){const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('Copied! Paste in WhatsApp');}
 
-
 /* ════════════════════════════════════════════════════════════
    CSV IMPORT — PARTIES & PRICELIST
    ════════════════════════════════════════════════════════════ */
@@ -3232,7 +3440,6 @@ function parseCSV(text){
   if(lines.length<2)return{headers:[],rows:[]};
   const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
   const rows=lines.slice(1).filter(l=>l.trim()).map(line=>{
-    // handle quoted fields
     const cols=[];let cur='';let inQ=false;
     for(let i=0;i<line.length;i++){
       if(line[i]==='"'){inQ=!inQ;}
@@ -3357,14 +3564,11 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
 let _deferredInstallPrompt = null;
 let _swRegistration = null;
 
-/* Register service worker */
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
       _swRegistration = reg;
-      /* Check for updates every 60 seconds */
       setInterval(() => { try{reg.update();}catch(e){} }, 60000);
-      /* New SW waiting → show update banner */
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         if(!newSW)return;
@@ -3375,22 +3579,18 @@ if('serviceWorker' in navigator){
         });
       });
     }).catch(err => console.log('SW registration failed:', err));
-    /* Reload after SW activates */
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
   });
 }
 
-/* Capture install prompt */
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  /* Show banner unless user dismissed before */
   if(!localStorage.getItem('craze_install_dismissed')){
     const banner = document.getElementById('install-banner');
     banner.style.display = 'flex';
-    /* Push login card up a bit on small screens */
     document.querySelector('.login-card')?.style && (document.querySelector('.login-card').style.marginBottom='70px');
   }
 });
@@ -3417,15 +3617,12 @@ function doUpdate(){
   document.getElementById('update-banner').style.display = 'none';
 }
 
-/* Online / offline detection */
 function updateOnlineStatus(){
   const offline = !navigator.onLine;
   const banner = document.getElementById('offline-banner');
   if(banner) banner.style.display = offline ? 'block' : 'none';
-  /* Push nav down when offline banner is showing */
   const nav = document.getElementById('main-nav');
   if(nav) nav.style.top = offline ? '40px' : '0';
-  /* Update sync dot */
   if(offline){
     setSyncStatus('err', 'Offline');
   } else if(window._FB_READY){
@@ -3434,9 +3631,8 @@ function updateOnlineStatus(){
 }
 window.addEventListener('online',  updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus(); /* run on load */
+updateOnlineStatus();
 
-/* iOS Safari install hint — show once */
 function showiOSHint(){
   const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
   const isInStandaloneMode = window.navigator.standalone;
@@ -3449,7 +3645,6 @@ function showiOSHint(){
 }
 showiOSHint();
 
-/* App installed event */
 window.addEventListener('appinstalled', () => {
   showToast('Craze Hosiery installed successfully!');
   document.getElementById('install-banner').style.display = 'none';
