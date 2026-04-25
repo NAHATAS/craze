@@ -756,12 +756,12 @@ input,textarea,select{font-family:var(--font)}
 </div>
 </div>
 
-<!-- PHONE ORDER MODAL (SP) -->
+<!-- PHONE CALL MODAL (SP) -->
 <div class="modal-overlay" id="phone-order-modal">
 <div class="modal modal-wide">
   <div class="modal-handle"></div>
-  <div class="modal-title" data-t="Phone Order">📞 Phone Order</div>
-  <div class="modal-sub" data-t="Record an order received over phone">Record an order received over phone</div>
+  <div class="modal-title" data-t="Phone Call">📞 Phone Call</div>
+  <div class="modal-sub" data-t="Log a call made from office">Log a call made from office</div>
 
   <label class="form-label" data-t="Select party">Select party</label>
   <input type="text" class="form-input" id="po-party-search" placeholder="Search party or type new name..." data-t-ph="Search party or type new name..." oninput="filterPoParties()" autocomplete="off">
@@ -779,15 +779,25 @@ input,textarea,select{font-family:var(--font)}
     </div>
   </div>
 
+  <div id="po-outcome-section" style="display:none">
+    <label class="form-label" data-t="Call outcome">Call outcome</label>
+    <div class="status-pills">
+      <button class="status-pill" onclick="poSelOutcome('order',this)" data-t="Order received">Order received</button>
+      <button class="status-pill" onclick="poSelOutcome('noorder',this)" data-t="No order">No order</button>
+    </div>
+  </div>
+
   <div id="po-order-section" style="display:none">
     <label class="form-label" data-t="Order items">Order items</label>
     <div id="po-picker-wrap"></div>
   </div>
 
-  <label class="form-label" data-t="Notes">Notes</label>
-  <textarea class="form-input" style="resize:vertical;min-height:50px" id="po-notes" placeholder="Call notes / delivery instructions..."></textarea>
+  <div id="po-notes-section" style="display:none">
+    <label class="form-label" data-t="Notes">Notes</label>
+    <textarea class="form-input" style="resize:vertical;min-height:50px" id="po-notes" placeholder="Call notes / feedback..."></textarea>
+  </div>
 
-  <button class="btn btn-purple btn-full" onclick="submitPhoneOrder()" data-t="Submit phone order">Submit phone order</button>
+  <button class="btn btn-purple btn-full" onclick="submitPhoneOrder()" id="po-submit-btn" data-t="Submit call log" style="display:none">Submit call log</button>
   <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="closeModal('phone-order-modal')" data-t="Cancel">Cancel</button>
 </div>
 </div>
@@ -913,7 +923,13 @@ const HI={
   'Order total':'ऑर्डर कुल',
   'No products in master. Admin needs to add products first.':'कोई उत्पाद नहीं है। एडमिन से उत्पाद जोड़ने के लिए कहें।',
   'Phone Order':'फोन ऑर्डर',
+  'Phone Call':'फोन कॉल',
   '📞 Phone Order':'📞 फोन ऑर्डर',
+  'Log a call made from office':'ऑफिस से की गई कॉल दर्ज करें',
+  'Call outcome':'कॉल परिणाम',
+  'Submit call log':'कॉल लॉग जमा करें',
+  'Call logged':'कॉल दर्ज हुई',
+  'Please select call outcome':'कॉल परिणाम चुनें',
   'Record an order received over phone':'फोन पर मिला ऑर्डर दर्ज करें',
   'Select party':'पार्टी चुनें',
   'Search party or type new name...':'पार्टी खोजें या नया नाम टाइप करें...',
@@ -1290,7 +1306,7 @@ function renderMobileView(){
       ${t('New party visit')}
     </button>
     <button class="add-btn" style="border-color:var(--purple);color:var(--purple);background:var(--purple-light)" onclick="openPhoneOrderModal()">
-      📞 ${t('Phone Order')}
+      📞 ${t('Phone Call')}
     </button>
     <button class="add-btn wa" onclick="openWASummary()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 13A6 6 0 107 1a6 6 0 000 12z" stroke="currentColor" stroke-width="1.3"/><path d="M7 4.5v3L9 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -1620,27 +1636,33 @@ async function submitAddVisit(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   PHONE ORDER (SP records order taken over phone)
+   PHONE CALL (SP logs a call made from office — outcome: order or noorder)
    ══════════════════════════════════════════════════════════ */
 let _poSelectedPartyId=null;
 let _poNewPartyName='';
 let _poPickerItems={};
 let _poPricelistId='';
+let _poOutcome=null;
 
 function openPhoneOrderModal(){
   _poSelectedPartyId=null;
   _poNewPartyName='';
   _poPickerItems={};
   _poPricelistId='';
+  _poOutcome=null;
   document.getElementById('po-party-search').value='';
   document.getElementById('po-party-search').style.display='block';
   document.getElementById('po-notes').value='';
   document.getElementById('po-selected-party').style.display='none';
   document.getElementById('po-new-party-fields').style.display='none';
+  document.getElementById('po-outcome-section').style.display='none';
   document.getElementById('po-order-section').style.display='none';
+  document.getElementById('po-notes-section').style.display='none';
+  document.getElementById('po-submit-btn').style.display='none';
   document.getElementById('po-party-list').style.display='none';
   document.getElementById('po-new-city').value='';
   document.getElementById('po-new-phone').value='';
+  document.querySelectorAll('#phone-order-modal .status-pill').forEach(p=>p.className='status-pill');
   openModal('phone-order-modal');
 }
 
@@ -1680,8 +1702,9 @@ function poSelectParty(partyId){
   document.getElementById('po-party-search').style.display='none';
   document.getElementById('po-party-list').style.display='none';
   document.getElementById('po-new-party-fields').style.display='none';
-  document.getElementById('po-order-section').style.display='block';
-  buildPhoneOrderPicker();
+  document.getElementById('po-outcome-section').style.display='block';
+  document.getElementById('po-notes-section').style.display='block';
+  document.getElementById('po-submit-btn').style.display='block';
 }
 
 function poCreateNewFromSearch(){
@@ -1695,19 +1718,39 @@ function poCreateNewFromSearch(){
   document.getElementById('po-party-search').style.display='none';
   document.getElementById('po-party-list').style.display='none';
   document.getElementById('po-new-party-fields').style.display='block';
-  document.getElementById('po-order-section').style.display='block';
-  buildPhoneOrderPicker();
+  document.getElementById('po-outcome-section').style.display='block';
+  document.getElementById('po-notes-section').style.display='block';
+  document.getElementById('po-submit-btn').style.display='block';
 }
 
 function poClearParty(){
   _poSelectedPartyId=null;
   _poNewPartyName='';
+  _poOutcome=null;
+  _poPickerItems={};
   document.getElementById('po-selected-party').style.display='none';
   document.getElementById('po-party-search').style.display='block';
   document.getElementById('po-party-search').value='';
   document.getElementById('po-party-search').focus();
   document.getElementById('po-new-party-fields').style.display='none';
+  document.getElementById('po-outcome-section').style.display='none';
   document.getElementById('po-order-section').style.display='none';
+  document.getElementById('po-notes-section').style.display='none';
+  document.getElementById('po-submit-btn').style.display='none';
+  document.querySelectorAll('#phone-order-modal .status-pill').forEach(p=>p.className='status-pill');
+}
+
+function poSelOutcome(outcome,btn){
+  _poOutcome=outcome;
+  document.querySelectorAll('#phone-order-modal .status-pill').forEach(p=>p.className='status-pill');
+  btn.className='status-pill sel-'+outcome;
+  if(outcome==='order'){
+    document.getElementById('po-order-section').style.display='block';
+    buildPhoneOrderPicker();
+  } else {
+    document.getElementById('po-order-section').style.display='none';
+    _poPickerItems={};
+  }
 }
 
 function buildPhoneOrderPicker(){
@@ -1758,20 +1801,20 @@ function updPoQty(prodId,val){
 
 async function submitPhoneOrder(){
   if(!_poSelectedPartyId&&!_poNewPartyName){showToast(t('Please select or create a party'));return}
-  if(!Object.keys(_poPickerItems).length){showToast(t('Add at least one product'));return}
+  if(!_poOutcome){showToast(t('Please select call outcome'));return}
+  if(_poOutcome==='order'&&!Object.keys(_poPickerItems).length){showToast(t('Add at least one product'));return}
 
   setSyncStatus('wait','Saving...');
   try{
     let partyId=_poSelectedPartyId;
-    // Create new party if needed
     if(!partyId){
       const city=document.getElementById('po-new-city').value.trim();
       if(!city){showToast(t('City is required'));setSyncStatus('ok','Live');return}
       const phone=document.getElementById('po-new-phone').value.trim();
       partyId=uid();
-      const partyData={id:partyId,name:_poNewPartyName,city,state:'',contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:today(),grade:'',source:'app',approved:false};
+      const partyData={id:partyId,name:_poNewPartyName,city,state:'',contact:'',phone,spId:currentSP.id,outstanding:0,lastOrder:_poOutcome==='order'?today():'',grade:'',source:'app',approved:false};
       await SET(REF('parties/'+partyId),partyData);
-    } else {
+    } else if(_poOutcome==='order'){
       await UPDATE(REF('parties/'+partyId),{lastOrder:today()});
     }
 
@@ -1782,12 +1825,12 @@ async function submitPhoneOrder(){
       partyId,
       plannedTime:nowTime(),
       date:today(),
-      status:'order',
+      status:_poOutcome,
       checkIn:nowTime(),
       checkOut:nowTime(),
       feedback:document.getElementById('po-notes').value.trim(),
       nextVisit:'',
-      orderItems:Object.entries(_poPickerItems).map(([prodId,{qty}])=>({prodId,qty})),
+      orderItems:_poOutcome==='order'?Object.entries(_poPickerItems).map(([prodId,{qty}])=>({prodId,qty})):[],
       payment:null,
       pricelistId:_poPricelistId||'',
       gps:null,
@@ -1797,7 +1840,7 @@ async function submitPhoneOrder(){
 
     setSyncStatus('ok','Live');
     closeModal('phone-order-modal');
-    showToast(t('Phone order recorded'));
+    showToast(_poOutcome==='order'?t('Phone order recorded'):t('Call logged'));
   }catch(e){
     setSyncStatus('err','Error');
     showToast(t('Failed:')+' '+e.message);
@@ -1951,12 +1994,12 @@ function renderDashboard(){
         <button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('df-from').value=today();document.getElementById('df-to').value=today();renderDashboard()">Today</button>
         <select class="filter-select" id="df-state" onchange="renderDashboard()"><option value="all">All states</option>${[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort().map(s=>`<option>${esc(s)}</option>`).join('')}</select>
         <select class="filter-select" id="df-sp" onchange="renderDashboard()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
-        <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option><option value="phone_order">📞 Phone Orders only</option></select>
+        <select class="filter-select" id="df-status" onchange="renderDashboard()"><option value="all">All statuses</option><option value="planned">Planned</option><option value="active">In visit</option><option value="order">Order received</option><option value="noorder">No order</option><option value="rescheduled">Rescheduled</option><option value="phone_order">📞 Phone Calls only</option></select>
       </div>
     </div>
     <div class="metrics-row">
       ${mc(todayV.filter(v=>v.type!=='phone_order').length,isRange?'Field visits':'Field visits today',prevSP!=='all'?(SALESPERSONS.find(s=>s.id===prevSP)||{name:'SP'}).name:'All salespersons')}
-      ${mc(phoneOrders.length,'📞 Phone Orders',fmtMoney(phoneOrdVal)+' value','var(--purple)')}
+      ${mc(phoneOrders.length,'📞 Phone Calls',phoneOrders.filter(v=>v.status==='order').length+' orders · '+fmtMoney(phoneOrdVal),'var(--purple)')}
       ${mc(fmtMoney(todayOrdVal),isRange?'Order value':'Order value today',todayOrd.length+' orders (incl. phone)','var(--accent)')}
       ${mc(fmtMoney(todayPay),isRange?'Collected':'Collected today',todayV.filter(v=>v.payment).length+' payments','var(--teal)')}
     </div>
@@ -2354,7 +2397,7 @@ function refreshMeCAContent(){
 
   const spRows=SALESPERSONS.map((sp,idx)=>{
     const sv=fv.filter(v=>v.spId===sp.id);const m=calcMeCA(sv);
-    const totalVisits=sv.filter(v=>['order','noorder','feedback'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order').length;
+    const totalVisits=sv.filter(v=>['order','noorder'].includes(v.status)&&v.checkIn&&v.checkOut&&v.type!=='phone_order').length;
     return`<div class="sp-meca-row">
       <div class="sp-meca-cell" style="text-align:center;font-weight:500;color:var(--text3)">${idx+1}</div>
       <div class="sp-meca-cell"><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></div>
@@ -3003,13 +3046,15 @@ function refreshSPSummary(){
     const phoneRows=phoneOrders.sort((a,b)=>b.date.localeCompare(a.date)).map((v,idx)=>{
       const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',city:''};
       const ov=orderValue(v);
+      const statusBadge=v.status==='order'?'<span class="badge badge-order" style="font-size:10px;padding:2px 6px">Order</span>':'<span class="badge badge-noorder" style="font-size:10px;padding:2px 6px">No order</span>';
       return`<tr>
         <td style="text-align:center;color:var(--text3)">${idx+1}</td>
         <td class="time-mono">${fmtDate(v.date)}</td>
         <td style="font-weight:500">${esc(party.name)}</td>
         <td>${esc(party.city||'—')}</td>
         <td class="time-mono">${v.checkIn?fmtTime(v.checkIn):'—'}</td>
-        <td class="price-tag">${fmtMoney(ov)}</td>
+        <td>${statusBadge}</td>
+        <td class="price-tag">${ov>0?fmtMoney(ov):'—'}</td>
         <td style="font-size:11px;color:var(--text2)">${esc(v.feedback||'—')}</td>
       </tr>`;
     }).join('');
@@ -3027,7 +3072,7 @@ function refreshSPSummary(){
         ${mc(spVisits.length,'Field visits')}
         ${mc(completed.length,'Completed')}
         ${mc(orders.length,'Field orders')}
-        ${mc(phoneOrders.length,'📞 Phone orders','var(--purple)')}
+        ${mc(phoneOrders.length,'📞 Phone calls','var(--purple)')}
         ${mc(convPct+'%','Conversion',convPct>=50?'var(--accent)':'var(--red)')}
         ${mc(fmtMoney(totOV+phoneOrdVal),'Total order value','var(--accent)')}
         ${mc(fmtMoney(totPay),'Collected','var(--teal)')}
@@ -3049,15 +3094,15 @@ function refreshSPSummary(){
 
       <div style="border-bottom:1px solid var(--border)">
         <div style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--surface2)" onclick="toggleSection('sps-phone-${sp.id}',this)">
-          <span style="font-size:13px;font-weight:600">📞 Phone Orders <span style="font-weight:400;color:var(--text2)">(${phoneOrders.length} orders · ${fmtMoney(phoneOrdVal)})</span></span>
+          <span style="font-size:13px;font-weight:600">📞 Phone Calls <span style="font-weight:400;color:var(--text2)">(${phoneOrders.length} calls · ${phoneOrders.filter(v=>v.status==='order').length} orders · ${fmtMoney(phoneOrdVal)})</span></span>
           <span style="font-size:11px;color:var(--text3)">▼ Click to expand</span>
         </div>
         <div id="sps-phone-${sp.id}" style="display:none">
           ${phoneOrders.length?`<div class="tbl-scroll"><table class="tbl">
-            <thead><tr><th>Sl</th><th>Date</th><th>Party</th><th>City</th><th>Time</th><th>Value</th><th>Notes</th></tr></thead>
+            <thead><tr><th>Sl</th><th>Date</th><th>Party</th><th>City</th><th>Time</th><th>Outcome</th><th>Value</th><th>Notes</th></tr></thead>
             <tbody>${phoneRows}</tbody>
-            <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="5" style="text-align:right">Total</td><td class="price-tag">${fmtMoney(phoneOrdVal)}</td><td></td></tr></tfoot>
-          </table></div>`:'<div style="padding:16px;font-size:12px;color:var(--text2);text-align:center">No phone orders in this period</div>'}
+            <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="6" style="text-align:right">Total</td><td class="price-tag">${fmtMoney(phoneOrdVal)}</td><td></td></tr></tfoot>
+          </table></div>`:'<div style="padding:16px;font-size:12px;color:var(--text2);text-align:center">No phone calls in this period</div>'}
         </div>
       </div>
 
@@ -3415,7 +3460,7 @@ function openWASummary(){
   if(ords.length)lines.push(`✅ Orders: ${ords.length}`);
   if(fieldVisits.filter(v=>v.status==='noorder').length)lines.push(`❌ No order: ${fieldVisits.filter(v=>v.status==='noorder').length}`);
   if(fieldVisits.filter(v=>v.status==='rescheduled').length)lines.push(`🔄 Rescheduled: ${fieldVisits.filter(v=>v.status==='rescheduled').length}`);
-  if(phoneOrders.length)lines.push(`📞 Phone Orders: ${phoneOrders.length}`);
+  if(phoneOrders.length){const phoneOrdCount=phoneOrders.filter(v=>v.status==='order').length;lines.push(`📞 Phone Calls: ${phoneOrders.length} (${phoneOrdCount} orders)`);}
   if(ords.length){lines.push('',`*Orders Received*`);ords.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};const tag=v.type==='phone_order'?' 📞':'';lines.push(`• ${p.name}${tag}: ${fmtMoney(orderValue(v))}`);});lines.push(`*Total: ${fmtMoney(totOV)}*`);}
   if(pays.length){lines.push('',`*Payments Collected*`);pays.forEach(v=>{const p=PARTIES.find(x=>x.id===v.partyId)||{name:'?'};lines.push(`• ${p.name}: ${fmtMoney(v.payment.amount)} (${v.payment.mode})`);});lines.push(`*Total: ${fmtMoney(totPay)}*`);}
   const fb=myV.filter(v=>v.feedback&&v.feedback.trim()&&['order','noorder'].includes(v.status));
