@@ -802,6 +802,16 @@ input,textarea,select{font-family:var(--font)}
 </div>
 </div>
 
+<!-- CALL DETAILS MODAL (admin views a phone call) -->
+<div class="modal-overlay" id="call-detail-modal">
+<div class="modal modal-wide">
+  <div class="modal-handle"></div>
+  <div class="modal-title">📞 Call Details</div>
+  <div id="call-detail-body"></div>
+  <button class="btn btn-outline btn-full" style="margin-top:12px" onclick="closeModal('call-detail-modal')">Close</button>
+</div>
+</div>
+
 <!-- CHANGE ADMIN PASSWORD MODAL -->
 <div class="modal-overlay" id="pwd-modal">
 <div class="modal">
@@ -1903,6 +1913,54 @@ async function submitNewPartyVisit(){
 }
 
 /* ════════════════════════════════════════════════════════════
+   ADMIN — CALL DETAILS (popup for a phone-call visit)
+   ════════════════════════════════════════════════════════════ */
+function openCallDetail(visitId){
+  const v=VISITS[visitId];
+  if(!v){showToast('Call not found');return;}
+  const sp=SALESPERSONS.find(s=>s.id===v.spId)||FALLBACK_SP;
+  const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',city:'',state:'',phone:''};
+  const ov=orderValue(v);
+  const itemRows=(v.orderItems||[]).map(it=>{
+    const p=PRODUCTS.find(x=>x.id===it.prodId)||{name:'?',code:'',unit:''};
+    const price=getProductPrice(it.prodId,v.pricelistId||'');
+    return`<tr>
+      <td style="font-size:12px"><div style="font-weight:500">${esc(p.name)}</div><div style="font-size:10px;color:var(--text2)">${esc(p.code||'')}</div></td>
+      <td style="text-align:center">${it.qty}${p.unit?' '+esc(p.unit):''}</td>
+      <td class="price-tag">${fmtMoney(price)}</td>
+      <td class="price-tag">${fmtMoney(price*it.qty)}</td>
+    </tr>`;
+  }).join('');
+  const statusBadge=v.status==='order'
+    ?'<span class="badge badge-order">Order received</span>'
+    :'<span class="badge badge-noorder">No order</span>';
+  document.getElementById('call-detail-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div><div style="font-size:11px;color:var(--text2)">Salesperson</div>
+        <div style="font-weight:500;font-size:13px;display:flex;align-items:center;gap:6px;margin-top:3px"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name)}</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Date & time</div>
+        <div style="font-weight:500;font-size:13px;margin-top:3px">${fmtDate(v.date)} · ${fmtTime(v.checkIn)}</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Party</div>
+        <div style="font-weight:500;font-size:13px;margin-top:3px">${esc(party.name)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:1px">${esc(party.city||'')}${party.state?', '+esc(party.state):''}${party.phone?' · 📱 '+esc(party.phone):''}</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Outcome</div>
+        <div style="margin-top:3px">${statusBadge}</div></div>
+    </div>
+    ${itemRows
+      ?`<div style="font-size:11px;color:var(--text2);margin:10px 0 4px">Order items</div>
+        <div class="tbl-scroll"><table class="tbl">
+          <thead><tr><th>Product</th><th style="text-align:center">Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+          <tfoot><tr style="background:var(--surface2);font-weight:600"><td colspan="3" style="text-align:right">Order total</td><td class="price-tag">${fmtMoney(ov)}</td></tr></tfoot>
+        </table></div>`
+      :'<div style="padding:10px;background:var(--surface2);border-radius:var(--r);font-size:12px;color:var(--text2);margin:8px 0">No order items (no-order call)</div>'}
+    <div style="font-size:11px;color:var(--text2);margin:14px 0 4px">Notes / feedback</div>
+    <div style="background:var(--surface2);padding:10px 12px;border-radius:var(--r);font-size:13px;white-space:pre-wrap;min-height:40px">${v.feedback?esc(v.feedback):'<span style="color:var(--text3)">— no notes entered —</span>'}</div>
+  `;
+  openModal('call-detail-modal');
+}
+
+/* ════════════════════════════════════════════════════════════
    ADMIN — DASHBOARD
    ════════════════════════════════════════════════════════════ */
 function renderDashboard(){
@@ -1940,7 +1998,7 @@ function renderDashboard(){
     const party=PARTIES.find(p=>p.id===v.partyId)||{name:'?',state:'—'};
     const ov=orderValue(v);
     const isPhone=v.type==='phone_order';
-    return`<tr${isPhone?' style="background:var(--purple-light)"':''}>
+    return`<tr${isPhone?` style="background:var(--purple-light);cursor:pointer" onclick="openCallDetail('${v.id}')" title="Click for full call details"`:''}>
       <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
       <td class="time-mono" style="white-space:nowrap">${v.date?fmtDate(v.date):'—'}</td>
       <td><div class="person-cell"><div class="av" style="width:22px;height:22px;background:${sp.bg};color:${sp.color};font-size:9px">${esc(sp.initials)}</div>${esc(sp.name.split(' ')[0])}</div></td>
