@@ -1073,6 +1073,19 @@ function loadSPsForLogin(){
     SALESPERSONS.forEach(sp=>{
       const o=document.createElement('option');o.value=sp.id;o.textContent=sp.name;sel.appendChild(o);
     });
+    // Auto-restore session if same-day
+    try{
+      const saved=JSON.parse(localStorage.getItem('craze_session')||'null');
+      if(saved&&saved.date===today()&&!currentRole){
+        if(saved.role==='admin'){
+          currentRole='admin';currentSP=null;bootApp();
+        }else if(saved.role==='sp'){
+          const sp=SALESPERSONS.find(s=>s.id===saved.spId);
+          if(sp){currentRole='sp';currentSP=sp;bootApp();}
+          else{localStorage.removeItem('craze_session');}
+        }
+      }
+    }catch(e){localStorage.removeItem('craze_session');}
   });
 }
 
@@ -1099,6 +1112,7 @@ function doAdminLogin(){
   const pwd=document.getElementById('admin-pwd').value;
   if(pwd===ADMIN_PWD){
     currentRole='admin';currentSP=null;
+    localStorage.setItem('craze_session',JSON.stringify({role:'admin',date:today()}));
     bootApp();
   } else {
     document.getElementById('login-error').textContent='Incorrect password';
@@ -1115,10 +1129,12 @@ function doSPLogin(){
   if(!sp){document.getElementById('login-error').textContent='Salesperson not found';return}
   if(sp.pin!==pin){document.getElementById('login-error').textContent='Incorrect PIN';return}
   currentRole='sp';currentSP=sp;
+  localStorage.setItem('craze_session',JSON.stringify({role:'sp',spId:sp.id,date:today()}));
   bootApp();
 }
 
 function doLogout(){
+  localStorage.removeItem('craze_session');
   // detach all listeners
   _listeners.forEach(({path,fn})=>{try{OFF(REF(path),fn)}catch(e){}});
   _listeners=[];
@@ -1132,6 +1148,16 @@ function doLogout(){
   document.getElementById('views-container').innerHTML='';
   document.getElementById('nav-tabs-wrap').innerHTML='';
 }
+
+// Auto-logout at midnight (check every 60s)
+setInterval(()=>{
+  if(!currentRole)return;
+  const saved=JSON.parse(localStorage.getItem('craze_session')||'null');
+  if(!saved||saved.date!==today()){
+    doLogout();
+    showToast('Session expired — please login again');
+  }
+},60000);
 
 /* ── UI TRANSLATION ── */
 function translateUI(){
