@@ -961,6 +961,7 @@ let _dashMap=null; /* Leaflet map reference — destroy before re-creating */
 
 /* ── IN-MEMORY CACHE (synced from Firebase) ── */
 let SALESPERSONS=[], PARTIES=[], PRODUCTS=[], VISITS={}, TOURS={}, TARGETS={}, PRICELISTS={};
+let ptPage=1; const PT_PER_PAGE=25;
 
 const SP_COLORS=[
   {color:'#1A5C3A',bg:'#E8F5EE'},{color:'#4A3580',bg:'#F0EEFB'},
@@ -1270,10 +1271,22 @@ function switchView(name,btn){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   const key=name.replace('⚙ ','').toLowerCase().replace(/\s+/g,'');
-  refreshView(key);
+  refreshView(key, true);
 }
 
-function refreshView(key){
+function refreshView(key, forceFullRender){
+  // Soft refresh for parties: if already rendered, just update rows + counts (preserves filters)
+  if(key==='parties' && !forceFullRender && document.getElementById('pt-type')){
+    // Update pending count badge in topbar
+    const pendingCount=PARTIES.filter(p=>p.source==='app'&&!p.approved).length;
+    const titleEl=document.querySelector('.admin-title');
+    if(titleEl){
+      const badgeHTML=pendingCount>0?` <span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:12px;padding:3px 10px">${pendingCount} pending approval</span>`:'';
+      titleEl.innerHTML='Party Master'+badgeHTML;
+    }
+    refreshParties();
+    return;
+  }
   const fn=VIEW_RENDERERS[key];
   if(fn)fn();
 }
@@ -2680,21 +2693,23 @@ function refreshPayments(){
    ADMIN — PARTIES
    ════════════════════════════════════════════════════════════ */
 function renderParties(){
+  ptPage=1;
   const states=[...new Set(PARTIES.map(p=>p.state).filter(Boolean))].sort();
   const pendingCount=PARTIES.filter(p=>p.source==='app'&&!p.approved).length;
   setViewHTML(`<div class="section-shell">
     <div class="admin-topbar">
       <div><div class="admin-title">Party Master ${pendingCount>0?`<span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:12px;padding:3px 10px">${pendingCount} pending approval</span>`:''}</div><div class="admin-sub"><span id="pt-count">${PARTIES.length} parties total</span></div></div>
       <div class="filter-row">
-        <select class="filter-select" id="pt-grade" onchange="refreshParties()"><option value="all">All grades</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option><option value="">No grade</option></select>
-        <select class="filter-select" id="pt-state" onchange="refreshParties()"><option value="all">All states</option>${states.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
-        <select class="filter-select" id="pt-sp" onchange="refreshParties()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
-        <select class="filter-select" id="pt-type" onchange="refreshParties()"><option value="all">All types</option><option value="new">New (app-added)</option><option value="existing">Existing (CSV)</option><option value="pending">Pending approval</option></select>
+        <select class="filter-select" id="pt-grade" onchange="ptPage=1;refreshParties()"><option value="all">All grades</option><option value="A">Grade A</option><option value="B">Grade B</option><option value="C">Grade C</option><option value="">No grade</option></select>
+        <select class="filter-select" id="pt-state" onchange="ptPage=1;refreshParties()"><option value="all">All states</option>${states.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+        <select class="filter-select" id="pt-sp" onchange="ptPage=1;refreshParties()"><option value="all">All SPs</option>${SALESPERSONS.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="filter-select" id="pt-type" onchange="ptPage=1;refreshParties()"><option value="all">All types</option><option value="new">New (app-added)</option><option value="existing">Existing (CSV)</option><option value="pending">Pending approval</option></select>
         <button class="btn btn-green" onclick="openPartyModal()">+ Add party</button><button class="btn btn-outline" onclick="openCSVPartyModal()">⬆ Import CSV</button>
       </div>
     </div>
-    <input class="search-bar" id="pt-search" placeholder="Search party name, contact, city..." oninput="refreshParties()">
+    <input class="search-bar" id="pt-search" placeholder="Search party name, contact, city..." oninput="ptPage=1;refreshParties()">
     <div class="card"><div class="tbl-scroll"><table class="tbl"><thead><tr><th>Sl</th><th>Party name</th><th>Grade</th><th>Contact</th><th>Phone</th><th>City</th><th>State</th><th>SP</th><th>Type</th><th>Outstanding</th><th>Last order</th><th>Actions</th></tr></thead><tbody id="pt-rows"></tbody></table></div></div>
+    <div id="pt-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px;font-size:13px;color:var(--text2)"></div>
   </div>`);
   refreshParties();
 }
@@ -2712,16 +2727,22 @@ function refreshParties(){
     if(q&&!p.name.toLowerCase().includes(q)&&!(p.contact||'').toLowerCase().includes(q)&&!(p.city||'').toLowerCase().includes(q))return false;
     return true;
   });
+  const totalFiltered=f.length;
+  const totalPages=Math.max(1,Math.ceil(totalFiltered/PT_PER_PAGE));
+  if(ptPage>totalPages)ptPage=totalPages;
+  const startIdx=(ptPage-1)*PT_PER_PAGE;
+  const paged=f.slice(startIdx,startIdx+PT_PER_PAGE);
   const gradeColors={A:'var(--accent)',B:'var(--blue)',C:'var(--amber)'};
   const gradeBg={A:'var(--accent-light)',B:'var(--blue-light)',C:'var(--amber-light)'};
   const ptCountEl=document.getElementById('pt-count');
-  if(ptCountEl) ptCountEl.textContent=f.length===PARTIES.length?`${PARTIES.length} parties total`:`Showing ${f.length} of ${PARTIES.length} parties`;
-  document.getElementById('pt-rows').innerHTML=f.map((p,idx)=>{
+  if(ptCountEl) ptCountEl.textContent=totalFiltered===PARTIES.length?`${PARTIES.length} parties total`:`Showing ${totalFiltered} of ${PARTIES.length} parties`;
+  document.getElementById('pt-rows').innerHTML=paged.map((p,idx)=>{
+    const sl=startIdx+idx+1;
     const sp=SALESPERSONS.find(s=>s.id===p.spId)||FALLBACK_SP;
     const isNewType=p.source==='app';
     const isPending=p.source==='app'&&!p.approved;
     return`<tr${isPending?' style="background:var(--amber-light)"':''}>
-      <td style="font-weight:500;color:var(--text3);text-align:center">${idx+1}</td>
+      <td style="font-weight:500;color:var(--text3);text-align:center">${sl}</td>
       <td style="font-weight:600">${esc(p.name)}${roIds.has(p.id)?' <span class="reorder-badge">⟳ Reorder</span>':''}${isPending?' <span class="badge" style="background:var(--amber-light);color:var(--amber);font-size:9px;padding:1px 6px">⏳ Pending</span>':''}</td>
       <td>${p.grade?`<span class="badge" style="background:${gradeBg[p.grade]||'var(--surface2)'};color:${gradeColors[p.grade]||'var(--text2)'};font-size:11px;font-weight:600;padding:2px 10px">${esc(p.grade)}</span>`:'—'}</td>
       <td>${esc(p.contact||'—')}</td><td class="time-mono">${esc(p.phone||'—')}</td><td>${esc(p.city||'—')}</td>
@@ -2738,6 +2759,21 @@ function refreshParties(){
       </td>
     </tr>`;
   }).join('')||'<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text2)">No parties found.</td></tr>';
+  // Pagination controls
+  const pgEl=document.getElementById('pt-pagination');
+  if(pgEl){
+    if(totalFiltered<=PT_PER_PAGE){pgEl.innerHTML='';pgEl.style.display='none';}
+    else{
+      pgEl.style.display='flex';
+      const endIdx=Math.min(startIdx+PT_PER_PAGE,totalFiltered);
+      let btns='';
+      btns+=`<button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="ptPage=1;refreshParties()" ${ptPage===1?'disabled':''}>« First</button>`;
+      btns+=`<button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="ptPage--;refreshParties()" ${ptPage===1?'disabled':''}>‹ Prev</button>`;
+      btns+=`<button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="ptPage++;refreshParties()" ${ptPage>=totalPages?'disabled':''}>Next ›</button>`;
+      btns+=`<button class="btn btn-outline" style="padding:4px 12px;font-size:12px" onclick="ptPage=${totalPages};refreshParties()" ${ptPage>=totalPages?'disabled':''}>Last »</button>`;
+      pgEl.innerHTML=`<span style="font-weight:500">${startIdx+1}–${endIdx} of ${totalFiltered}</span><div style="display:flex;gap:4px;align-items:center"><span style="font-size:12px">Page ${ptPage}/${totalPages}</span> ${btns}</div>`;
+    }
+  }
 }
 function openPartyModal(editId){
   if(!SALESPERSONS.length){showToast('Add salespersons first');return}
